@@ -224,7 +224,14 @@ export function CoinAvatar({ src, symbol, size = 'md' }: { src?: string; symbol:
   return (
     <span className={`relative grid shrink-0 place-items-center overflow-hidden rounded-full bg-white/[0.08] font-bold text-slate-300 ring-1 ring-white/10 ${s}`}>
       {src && !failed ? (
-        <img src={src} alt="" loading="lazy" decoding="async" className="size-full object-cover" onError={() => setFailed(true)} />
+        <img
+          // CoinGecko's "large" logo is ~250px; "small" is plenty for icons up to 32px
+          src={size === 'sm' || size === 'md' ? src.replace('/large/', '/small/') : src}
+          alt=""
+          decoding="async"
+          className="size-full object-cover"
+          onError={() => setFailed(true)}
+        />
       ) : (
         symbol.slice(0, 3).toUpperCase()
       )}

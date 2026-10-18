@@ -1,9 +1,9 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Bricolage Grotesque", "Geist", ui-sans-serif, sans-serif;
-  --font-mono: "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Bricolage Grotesque Variable", "Geist Variable", ui-sans-serif, sans-serif;
+  --font-mono: "Geist Mono Variable", ui-monospace, "SFMono-Regular", Menlo, monospace;
 
   --color-ink: #05080f;
   --color-surface: #0b111d;
@@ -19,6 +19,7 @@
   --default-transition-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
 
   --animate-fade-up: fade-up 320ms var(--ease-out) backwards;
+  --animate-rise: rise 320ms var(--ease-out) backwards;
   --animate-fade-in: fade-in 220ms var(--ease-out) backwards;
   --animate-swap-in: swap-in 260ms var(--ease-out) backwards;
   --animate-ticker: ticker 45s linear infinite;
@@ -26,6 +27,10 @@
 
   @keyframes fade-up {
     from { opacity: 0; transform: translateY(var(--rise, 8px)); }
+  }
+  /* Movement only, no opacity: safe for the LCP element (an opacity fade delays LCP) */
+  @keyframes rise {
+    from { transform: translateY(var(--rise, 8px)); }
   }
   @keyframes fade-in {
     from { opacity: 0; }

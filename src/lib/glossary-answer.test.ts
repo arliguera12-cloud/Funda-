@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { glossaryAnswer } from './ai';
+import { glossaryAnswer } from './glossary-answer';
 
 describe('glossaryAnswer', () => {
   it('prefers the most specific term', () => {

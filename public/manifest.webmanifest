@@ -1,0 +1,16 @@
+{
+  "name": "Funda · Aprende a invertir en cripto",
+  "short_name": "Funda",
+  "description": "Precios en vivo, señales explicadas, alertas de precio y un tutor con IA.",
+  "lang": "es-419",
+  "start_url": "./#/app",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#05080f",
+  "theme_color": "#05080f",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

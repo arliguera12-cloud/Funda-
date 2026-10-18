@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef } from 'react';
+import { memo, useEffect, useId, useMemo, useRef } from 'react';
 import { Area, AreaChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import type { PricePoint } from '../lib/market';
 import { axisUsd, pct, usd } from '../lib/format';
@@ -6,11 +6,12 @@ import { prefersReducedMotion } from './ui';
 
 const UP = '#34d399';
 const DOWN = '#fb7185';
-const TICK = { fill: '#8190a6', fontSize: 11, fontFamily: 'Geist Mono, ui-monospace, monospace' };
+const TICK = { fill: '#8190a6', fontSize: 11, fontFamily: '"Geist Mono Variable", ui-monospace, monospace' };
 
-export default function PriceChart({ data, days, label }: { data: PricePoint[]; days: number; label: string }) {
+function PriceChart({ data, days, label }: { data: PricePoint[]; days: number; label: string }) {
   const gid = 'g' + useId().replace(/[^\w-]/g, '');
   const wrap = useRef<HTMLDivElement>(null);
+  const rows = useMemo(() => data.map(([t, p]) => ({ t, p })), [data]);
   const first = data[0]?.[1];
   const last = data[data.length - 1]?.[1];
   const up = data.length > 1 && last >= first;
@@ -31,7 +32,7 @@ export default function PriceChart({ data, days, label }: { data: PricePoint[]; 
     <div ref={wrap} className="h-60 sm:h-80">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart
-          data={data.map(([t, p]) => ({ t, p }))}
+          data={rows}
           margin={{ top: 10, right: 0, left: 0, bottom: 0 }}
           title={label}
           desc={data.length > 1 ? `De ${usd(first)} a ${usd(last)} (${pct((last / first - 1) * 100)})` : undefined}
@@ -76,3 +77,6 @@ export default function PriceChart({ data, days, label }: { data: PricePoint[]; 
     </div>
   );
 }
+
+// Recharts is expensive: skip re-renders from the 60 s market refresh when the series hasn't changed
+export default memo(PriceChart);

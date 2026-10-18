@@ -2,7 +2,8 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import type { Chat } from '@google/genai';
 import { Bot, LoaderCircle, Send, Sparkles } from 'lucide-react';
-import { aiEnabled, createChat, glossaryAnswer, marketContext } from '../lib/ai';
+import { aiEnabled, createChat, marketContext } from '../lib/ai';
+import { glossaryAnswer } from '../lib/glossary-answer';
 import { useMarket } from '../lib/market-context';
 import { useAuth } from '../lib/auth';
 import { renderBold } from '../components/ui';
@@ -43,7 +44,7 @@ export default function Assistant() {
 
     try {
       if (!aiEnabled) return write(glossaryAnswer(q));
-      chat.current ??= createChat(marketContext(coins, signals));
+      chat.current ??= await createChat(marketContext(coins, signals));
       let acc = '';
       for await (const chunk of await chat.current!.sendMessageStream({ message: q })) {
         acc += chunk.text ?? '';

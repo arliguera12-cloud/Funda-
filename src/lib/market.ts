@@ -52,7 +52,8 @@ async function getJSON<T>(path: string, ttlMs: number, validate: (v: unknown) =>
   const req = (async () => {
     let res: Response;
     try {
-      res = await fetch(API + path);
+      // A stalled request would otherwise block every later refresh behind the same promise
+      res = await fetch(API + path, { signal: AbortSignal.timeout(12_000) });
     } catch (e) {
       throw friendlyError(e);
     }
@@ -89,21 +90,29 @@ export function parseHistory(v: unknown): PricePoint[] {
   return prices.filter((p): p is PricePoint => Array.isArray(p) && finite(p[0]) && finite(p[1]) && p[1] > 0);
 }
 
+const MARKETS_PATH = `/coins/markets?vs_currency=usd&ids=${TOP_IDS.join(',')}&order=market_cap_desc&sparkline=true&price_change_percentage=1h,24h,7d`;
+const historyPath = (id: string, days: number) =>
+  `/coins/${encodeURIComponent(id)}/market_chart?vs_currency=usd&days=${days}${days >= 90 ? '&interval=daily' : ''}`;
+// Stored as { prices } so the cache keeps CoinGecko's shape
+const parseHistoryEntry = (v: unknown) => ({ prices: parseHistory(v) });
+
 export function fetchMarkets(force = false): Promise<Coin[]> {
-  return getJSON(
-    `/coins/markets?vs_currency=usd&ids=${TOP_IDS.join(',')}&order=market_cap_desc&sparkline=true&price_change_percentage=1h,24h,7d`,
-    55_000,
-    parseMarkets,
-    force,
-  );
+  return getJSON(MARKETS_PATH, 55_000, parseMarkets, force);
 }
 
 export async function fetchHistory(id: string, days: number): Promise<PricePoint[]> {
-  const daily = days >= 90 ? '&interval=daily' : '';
   const ttl = days === 1 ? 5 * 60_000 : 30 * 60_000;
-  // Stored as { prices } so the cache keeps CoinGecko's shape
-  const data = await getJSON(`/coins/${encodeURIComponent(id)}/market_chart?vs_currency=usd&days=${days}${daily}`, ttl, (v) => ({
-    prices: parseHistory(v),
-  }));
-  return data.prices;
+  return (await getJSON(historyPath(id, days), ttl, parseHistoryEntry)).prices;
 }
+
+/** Last cached value whatever its age, so returning visitors see data instantly while it refreshes. */
+function peek<T>(path: string, validate: (v: unknown) => T): T | null {
+  try {
+    const raw = JSON.parse(localStorage.getItem(`funda:cg:${path}`) ?? 'null');
+    return raw ? validate(raw.v) : null;
+  } catch {
+    return null;
+  }
+}
+export const peekMarkets = () => peek(MARKETS_PATH, parseMarkets);
+export const peekHistory = (id: string, days: number) => peek(historyPath(id, days), parseHistoryEntry)?.prices ?? null;

@@ -112,16 +112,24 @@ export default function AppLayout() {
     return () => document.removeEventListener('pointerdown', onDown);
   }, []);
 
-  // Warm up the other pages so navigation never shows a loading flash
+  // Warm up the other pages when idle so navigation never shows a loading flash (not on Save-Data / 2G)
   useEffect(() => {
-    const t = setTimeout(() => {
+    const c = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
+    if (c?.saveData || /2g/.test(c?.effectiveType ?? '')) return;
+    const warm = () => {
       import('../pages/Dashboard');
       import('../pages/CoinDetail');
+      import('../components/PriceChart');
       import('../pages/Alerts');
       import('../pages/Assistant');
       import('../pages/Learn');
       import('../pages/Platforms');
-    }, 1500);
+    };
+    if ('requestIdleCallback' in window) {
+      const id = requestIdleCallback(warm, { timeout: 4000 });
+      return () => cancelIdleCallback(id);
+    }
+    const t = setTimeout(warm, 3000);
     return () => clearTimeout(t);
   }, []);
 
@@ -228,7 +236,7 @@ export default function AppLayout() {
             }
           >
             <ErrorBoundary key={pathname}>
-              <div className="animate-fade-up" style={{ '--rise': '6px' } as CSSProperties}>
+              <div className="animate-rise" style={{ '--rise': '6px' } as CSSProperties}>
                 <Outlet />
               </div>
             </ErrorBoundary>
