@@ -16,7 +16,7 @@ const NAV = [
   { to: '/app/alertas', label: 'Alertas', icon: Bell },
   { to: '/app/herramientas', label: 'Herramientas', icon: Calculator },
   { to: '/app/aprende', label: 'Aprende', icon: BookOpen },
-  { to: '/app/asistente', label: 'Funda IA', icon: Sparkles },
+  { to: '/app/asistente', label: 'Trace YN IA', icon: Sparkles },
   { to: '/app/plataformas', label: 'Plataformas', icon: Store, desktopOnly: true },
 ];
 

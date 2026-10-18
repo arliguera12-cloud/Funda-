@@ -1,6 +1,6 @@
 # Guía de despliegue gratuito (para la sesión de Claude que maneja el navegador)
 
-Objetivo: publicar Funda **sin costo** con este orden: Worker (guarda las claves) → sitio en Cloudflare Pages → Firebase (login).
+Objetivo: publicar Trace YN **sin costo** con este orden: Worker (guarda las claves) → sitio en Cloudflare Pages → Firebase (login).
 Cuentas: Cloudflare, Google AI Studio, Twelve Data y Firebase (todas con plan gratuito).
 
 ## Reglas para quien ejecute esto
@@ -14,7 +14,7 @@ Cuentas: Cloudflare, Google AI Studio, Twelve Data y Firebase (todas con plan gr
 
 | Dato | Valor sugerido |
 |---|---|
-| Proyecto de Pages (define la URL del sitio) | `funda` → `https://funda.pages.dev` (si está ocupado: `funda-invierte`, etc.) |
+| Proyecto de Pages (define la URL del sitio) | `traceyn` → `https://traceyn.pages.dev` |
 | Worker | `funda-api` → `https://funda-api.<subdominio-de-la-cuenta>.workers.dev` |
 | Repo | `arliguera12-cloud/Funda-`, rama `main` (el PR #1 debe estar mezclado antes) |
 
@@ -22,7 +22,7 @@ Cuentas: Cloudflare, Google AI Studio, Twelve Data y Firebase (todas con plan gr
 
 1. **Gemini**: <https://aistudio.google.com/apikey> → *Create API key* (un proyecto nuevo de Google Cloud está bien). Copia la clave solo al portapapeles.
 2. **Twelve Data**: <https://twelvedata.com> → crear cuenta gratuita (*Basic*) → *API keys*. Copia la clave.
-3. **Firebase**: <https://console.firebase.google.com> → *Add project* (sin Analytics) → *Build → Authentication → Get started* → activar **Correo/contraseña** y **Google** → *Project settings → Your apps → Web (</>)* → registrar app "Funda" **sin** Hosting → anotar `apiKey`, `authDomain`, `projectId`, `appId` (la config web de Firebase es pública por diseño).
+3. **Firebase**: <https://console.firebase.google.com> → *Add project* (sin Analytics) → *Build → Authentication → Get started* → activar **Correo/contraseña** y **Google** → *Project settings → Your apps → Web (</>)* → registrar app "Trace YN" **sin** Hosting → anotar `apiKey`, `authDomain`, `projectId`, `appId` (la config web de Firebase es pública por diseño).
 4. En Google Cloud Console (proyecto de la clave de Gemini) → *APIs & Services → Quotas*: fija un tope diario bajo para *Generative Language API*, para que un abuso no agote la cuota.
 
 ## Paso 2 · Worker (carpeta `worker/` del repo)
@@ -33,14 +33,14 @@ Opción A, recomendada (se actualiza con cada `git push`):
 3. Terminado el primer deploy: *Settings → Variables and Secrets* →
    - Secret `GEMINI_API_KEY` = clave de Gemini.
    - Secret `TWELVEDATA_KEY` = clave de Twelve Data.
-   - Variable `ALLOWED_ORIGINS` = `https://funda.pages.dev` (la URL real del sitio; varios separados por coma; para probar en local agrega `http://localhost:3000`).
+   - Variable `ALLOWED_ORIGINS` = `https://traceyn.pages.dev` (la URL real del sitio; varios separados por coma; para probar en local agrega `http://localhost:3000`).
    - Si `wrangler.toml` vuelve a pisar `ALLOWED_ORIGINS` en cada deploy, edita el valor en `worker/wrangler.toml` y súbelo al repo (es lo correcto: la variable no es secreta).
 4. Anota la URL del Worker.
 
 Opción B (sin Git): *Workers & Pages → Create → Hello World* → nombre `funda-api` → *Edit code* → pegar el contenido de `worker/index.js` → Deploy, y luego añadir los secretos y la variable como arriba.
 
 **Prueba** (con DevTools o `curl`, desde un origen permitido el Worker responde; desde otro, 403):
-- `GET <worker>/stocks?symbol=SPY&outputsize=5` con cabecera `Origin: https://funda.pages.dev` → JSON con `values`.
+- `GET <worker>/stocks?symbol=SPY&outputsize=5` con cabecera `Origin: https://traceyn.pages.dev` → JSON con `values`.
 - Sin cabecera `Origin` → `403`.
 
 **Límite de abuso (gratis)**: Cloudflare → el dominio/zona del Worker → *Security → WAF → Rate limiting rules* → una regla por IP (por ejemplo 30 peticiones/minuto a `funda-api…/v1beta/*`). Si la cuenta no tiene zona propia en `workers.dev`, omítelo: el tope de cuota de Gemini del Paso 1.4 es la protección.
@@ -52,20 +52,20 @@ Opción B (sin Git): *Workers & Pages → Create → Hello World* → nombre `fu
 3. Variables de entorno (**Production**; son de compilación, así que hay que re-desplegar al cambiarlas):
    - `VITE_API_PROXY` = URL del Worker (sin barra final)
    - `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_APP_ID`
-   - `VITE_SITE_URL` = `https://funda.pages.dev` (o el dominio propio)
+   - `VITE_SITE_URL` = `https://traceyn.pages.dev` (o el dominio propio)
    - **No definas** `GEMINI_API_KEY` ni `VITE_TWELVEDATA_KEY` aquí: con el proxy no hacen falta y quedarían visibles en el navegador.
 4. Guardar y desplegar. Si la URL final difiere de la sugerida, corrige `ALLOWED_ORIGINS` (Paso 2) y `VITE_SITE_URL`, y re-despliega.
 
 ## Paso 4 · Firebase
 
-*Authentication → Settings → Authorized domains → Add domain* → `funda.pages.dev` (y el dominio propio si lo hay).
+*Authentication → Settings → Authorized domains → Add domain* → `traceyn.pages.dev` (y el dominio propio si lo hay).
 
 ## Paso 5 · Verificación final (en la URL pública, ventana de incógnito)
 
 - [ ] Portada y `#/app` cargan; el tema claro/oscuro cambia; sin errores rojos en consola.
 - [ ] Cripto y divisas muestran precios reales (CoinGecko y Frankfurter se piden directo desde el navegador).
 - [ ] Sección **Bolsa y ETFs** muestra datos (pestaña Network: la petición va al Worker `/stocks`, **no** a `api.twelvedata.com`).
-- [ ] **Funda IA** responde (Network: `POST` al Worker, sin `generativelanguage.googleapis.com`; ninguna clave en las peticiones).
+- [ ] **Trace YN IA** responde (Network: `POST` al Worker, sin `generativelanguage.googleapis.com`; ninguna clave en las peticiones).
 - [ ] Buscar en el código servido (`Sources`) las cadenas `AIza` y la clave de Twelve Data: **no deben aparecer**.
 - [ ] Login con Google y con correo/contraseña funciona; cerrar sesión funciona.
 - [ ] Desde otro origen (por ejemplo `curl -H "Origin: https://malo.com" <worker>/stocks?symbol=SPY&outputsize=5`) el Worker responde `403`.

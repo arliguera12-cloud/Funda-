@@ -158,7 +158,7 @@ function Dca() {
         <NumberField label="Cuánto compras cada vez" value={amount} onChange={setAmount} prefix="$" />
         <div>
           <p className="label" id="dca-freq">Cada cuánto</p>
-          <Segmented label="Frecuencia de compra" value={every} onChange={setEvery} options={[{ value: 7, label: 'Semanal' }, { value: 14, label: 'Quincenal' }, { value: 30, label: 'Mensual' }]} className="w-full" />
+          <Segmented label="Frecuencia de compra" value={every} onChange={setEvery} options={[{ value: 7, label: 'Semanal' }, { value: 14, label: 'Quincenal' }, { value: 30, label: 'Mensual' }]} />
         </div>
       </form>
 
@@ -271,7 +271,7 @@ export default function Tools() {
 
   return (
     <div>
-      <title>Herramientas · Funda</title>
+      <title>Herramientas · Trace YN</title>
       <PageHeader
         kicker="Herramientas"
         title={<>Haz las cuentas <span className="mark">antes</span> de invertir</>}
@@ -283,7 +283,6 @@ export default function Tools() {
           label="Herramientas"
           value={tab}
           onChange={(v) => setParams({ herramienta: v }, { replace: true })}
-          className="w-full sm:w-fit"
           options={TABS.map((t) => ({ value: t.value, label: t.label, short: t.short, id: `tab-${t.value}`, controls: `panel-${t.value}` }))}
         />
       </div>

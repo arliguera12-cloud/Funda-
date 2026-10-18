@@ -1,4 +1,4 @@
-# Funda · Aprende a invertir
+# Trace YN · Aprende a invertir
 
 App web para aprender a invertir con información, no con intuición: **bolsa y ETFs, divisas y criptomonedas** en un solo lugar, con señales explicadas, alertas, herramientas de cálculo y un tutor con IA. Pensada para principiantes de Latinoamérica (precios en dólares).
 
@@ -12,7 +12,7 @@ App web para aprender a invertir con información, no con intuición: **bolsa y 
 | **Detalle de activo** | Gráfica por periodo, datos clave, ficha educativa y señal (RSI, medias de 20 y 50 días, volatilidad) explicada en palabras simples. Las divisas se muestran sin señal. |
 | **Alertas** | Avisos de precio y de cambio de señal para cualquier activo, dentro de la app y como notificación del navegador. |
 | **Herramientas** | Interés compuesto (con inflación), simulador de compras periódicas (DCA) con precios reales y test de perfil de inversionista. |
-| **Funda IA** (Gemini) | Tutor de inversión en general. Sin clave responde desde el glosario y las fichas, y nunca recomienda comprar o vender. |
+| **Trace YN IA** (Gemini) | Tutor de inversión en general. Sin clave responde desde el glosario y las fichas, y nunca recomienda comprar o vender. |
 | **Aprende** | Ruta de 5 guías para empezar, guías de seguridad y cripto, fichas de cada instrumento y glosario de +70 términos. |
 | **Plataformas** | Enlaces oficiales a brokers, exchanges y billeteras, con avisos de disponibilidad por país. |
 
@@ -35,7 +35,7 @@ Otros comandos: `npm run build`, `npm test`, `npm run typecheck`.
 - **Gemini**: <https://aistudio.google.com/apikey> → `GEMINI_API_KEY`.
 - **Firebase Auth**: crea un proyecto en <https://console.firebase.google.com>, activa *Correo/contraseña* y *Google*, registra una app web y copia los valores en `VITE_FIREBASE_*`. Agrega tu dominio en *Authentication → Settings → Authorized domains*.
 - **Bolsa y ETFs**: clave gratuita de <https://twelvedata.com> → `VITE_TWELVEDATA_KEY`. Sin ella esa sección queda desactivada.
-- **Dominio público**: `VITE_SITE_URL` (por ejemplo `https://funda.app`) para que la imagen al compartir en WhatsApp/Facebook use una URL absoluta.
+- **Dominio público**: `VITE_SITE_URL` (por ejemplo `https://traceyn.pages.dev`) para que la imagen al compartir en WhatsApp/Facebook use una URL absoluta.
 
 Sin claves la app funciona igual: cripto y divisas no necesitan clave, el login queda en versión de prueba y el asistente responde con el glosario.
 
@@ -80,4 +80,4 @@ src/
 
 ---
 
-*Funda es una herramienta educativa. Las señales se calculan automáticamente y no son asesoría financiera.*
+*Trace YN es una herramienta educativa. Las señales se calculan automáticamente y no son asesoría financiera.*

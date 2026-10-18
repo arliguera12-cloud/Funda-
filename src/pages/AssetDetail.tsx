@@ -65,7 +65,7 @@ export default function AssetDetail() {
   if (!def || !meta) {
     return (
       <div className="py-6">
-        <title>Activo no encontrado · Funda</title>
+        <title>Activo no encontrado · Trace YN</title>
         <EmptyState
           icon={SearchX}
           title="No encontramos ese activo"
@@ -92,7 +92,7 @@ export default function AssetDetail() {
 
   return (
     <div>
-      <title>{`${def.name} ${asset ? fmtPrice(def, asset.price) : ''} · Funda`}</title>
+      <title>{`${def.name} ${asset ? fmtPrice(def, asset.price) : ''} · Trace YN`}</title>
       <Link to="/app" className="-ml-1 inline-flex min-h-11 items-center gap-1 px-1 text-sm font-medium text-ink-2 hover:text-ink">
         <ArrowLeft className="size-4" aria-hidden /> Mercados
       </Link>

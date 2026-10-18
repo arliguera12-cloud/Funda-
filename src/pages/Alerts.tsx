@@ -77,7 +77,7 @@ export default function Alerts() {
 
   return (
     <div>
-      <title>Alertas · Funda</title>
+      <title>Alertas · Trace YN</title>
       <PageHeader
         kicker="Alertas"
         title={
@@ -85,7 +85,7 @@ export default function Alerts() {
             Que el mercado te <span className="mark">avise</span> a ti
           </>
         }
-        description="Elige un precio y te avisamos cuando el activo llegue a él. Revisamos el mercado cada minuto mientras tengas Funda abierto."
+        description="Elige un precio y te avisamos cuando el activo llegue a él. Revisamos el mercado cada minuto mientras tengas Trace YN abierto."
       />
 
       {alerts.length > 0 && permission === 'default' && (
@@ -199,7 +199,7 @@ export default function Alerts() {
                 </button>
                 <p className="flex items-start gap-2 text-xs text-ink-2">
                   <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-                  Las alertas se revisan solo mientras Funda está abierto en tu navegador.
+                  Las alertas se revisan solo mientras Trace YN está abierto en tu navegador.
                 </p>
               </>
             )}

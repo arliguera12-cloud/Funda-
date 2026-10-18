@@ -4,7 +4,7 @@ import { SIGNAL_META, type Signal } from './indicators';
 import { pct } from './format';
 
 const apiKey = process.env.API_KEY;
-// Con VITE_API_PROXY (Worker de Funda) la clave de Gemini vive en el servidor y el navegador no la ve
+// Con VITE_API_PROXY (Worker de Trace YN) la clave de Gemini vive en el servidor y el navegador no la ve
 const proxy = (import.meta.env.VITE_API_PROXY as string | undefined)?.replace(/\/$/, '');
 const MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest';
 
@@ -14,7 +14,7 @@ export const aiEnabled = !!(proxy || apiKey);
 let aiPromise: Promise<GoogleGenAI> | null = null;
 const getAI = () => (aiPromise ??= import('@google/genai').then(({ GoogleGenAI }) => new GoogleGenAI(proxy ? { apiKey: 'proxy', httpOptions: { baseUrl: proxy } } : { apiKey })));
 
-const SYSTEM = `Eres "Funda IA", un tutor de inversiones y mercados para principiantes de Latinoamérica (el público principal vive en El Salvador, donde la moneda es el dólar).
+const SYSTEM = `Eres "Trace YN IA", el asistente de Trace YN: un tutor de inversiones y mercados para principiantes de Latinoamérica (el público principal vive en El Salvador, donde la moneda es el dólar).
 Cubres inversión en general: ahorro, interés compuesto, inflación, acciones, bonos, ETFs, oro, divisas y criptomonedas.
 Reglas:
 - Responde siempre en español claro y cercano. Usa analogías de la vida diaria para explicar términos complejos.

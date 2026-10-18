@@ -10,15 +10,15 @@ import { PublicFooter, PublicHeader } from '../components/PublicChrome';
 import { AssetMark, Change, Price, SectionHead, SignalBadge, SignalMeter, Skeleton, Sparkline, prefersReducedMotion } from '../components/ui';
 
 const FAQ = [
-  { q: '¿Funda guarda mi dinero o mis inversiones?', a: 'No. Funda no custodia fondos, no compra ni vende por ti y no se conecta a tus cuentas. Compras y guardas lo que elijas en la plataforma que tú decidas.' },
-  { q: '¿Funda me va a pedir mi frase semilla o acceso a mi billetera?', a: 'Nunca. Si alguien te pide tu frase semilla, tus claves o acceso a tu cuenta diciendo que es de Funda, es una estafa.' },
-  { q: '¿Funda me dice qué comprar?', a: 'No. Funda es una herramienta educativa: muestra indicadores calculados automáticamente y te explica qué significan. La decisión siempre es tuya.' },
-  { q: '¿Cómo gana dinero Funda?', a: 'Hoy Funda es gratis. No vendemos inversiones, no cobramos comisiones y no recibimos pagos de las plataformas que aparecen en la app.' },
-  { q: '¿Necesito saber de finanzas?', a: 'No. Funda está pensada para quien empieza desde cero: cada término tiene una explicación simple y un ejemplo, y puedes preguntarle a Funda IA lo que no entiendas.' },
-  { q: '¿Puedo usar Funda desde El Salvador?', a: 'Sí. Funda funciona desde cualquier país y muestra los precios en dólares (USD). Antes de abrir una cuenta en una plataforma, verifica en su sitio oficial que acepte usuarios de tu país.' },
+  { q: '¿Trace YN guarda mi dinero o mis inversiones?', a: 'No. Trace YN no custodia fondos, no compra ni vende por ti y no se conecta a tus cuentas. Compras y guardas lo que elijas en la plataforma que tú decidas.' },
+  { q: '¿Trace YN me va a pedir mi frase semilla o acceso a mi billetera?', a: 'Nunca. Si alguien te pide tu frase semilla, tus claves o acceso a tu cuenta diciendo que es de Trace YN, es una estafa.' },
+  { q: '¿Trace YN me dice qué comprar?', a: 'No. Trace YN es una herramienta educativa: muestra indicadores calculados automáticamente y te explica qué significan. La decisión siempre es tuya.' },
+  { q: '¿Cómo gana dinero Trace YN?', a: 'Hoy Trace YN es gratis. No vendemos inversiones, no cobramos comisiones y no recibimos pagos de las plataformas que aparecen en la app.' },
+  { q: '¿Necesito saber de finanzas?', a: 'No. Trace YN está pensada para quien empieza desde cero: cada término tiene una explicación simple y un ejemplo, y puedes preguntarle a Trace YN IA lo que no entiendas.' },
+  { q: '¿Puedo usar Trace YN desde El Salvador?', a: 'Sí. Trace YN funciona desde cualquier país y muestra los precios en dólares (USD). Antes de abrir una cuenta en una plataforma, verifica en su sitio oficial que acepte usuarios de tu país.' },
   { q: '¿Necesito mucho dinero para empezar?', a: 'No. Puedes empezar con montos pequeños. Lo más importante es la constancia: invertir un poco cada mes (estrategia DCA) suele pesar más que acertar el momento.' },
   { q: '¿Qué tan confiables son las señales?', a: 'Se basan en indicadores que usan los analistas (RSI, medias móviles de 20 y 50 días, volatilidad). Ayudan a evitar decisiones impulsivas, pero ningún indicador predice el futuro.' },
-  { q: '¿Es gratis?', a: 'Sí. Crear tu cuenta y usar Funda es gratis, sin tarjeta.' },
+  { q: '¿Es gratis?', a: 'Sí. Crear tu cuenta y usar Trace YN es gratis, sin tarjeta.' },
 ];
 
 const TERMS = ['ETF', 'Inflación', 'Interés compuesto', 'Bono', 'Diversificación', 'DCA', 'Blockchain', 'Frase semilla'];
@@ -101,7 +101,7 @@ export default function Landing() {
 
   return (
     <div className="overflow-x-hidden">
-      <title>Funda · Aprende a invertir sin tecnicismos</title>
+      <title>Trace YN · Aprende a invertir sin tecnicismos</title>
       <PublicHeader
         nav={
           <nav className="hidden items-center gap-6 text-sm font-medium lg:flex" aria-label="Secciones">
@@ -230,7 +230,7 @@ export default function Landing() {
             <div className="order-1 lg:order-2">
               <p className="kicker">Alertas</p>
               <h3 className="mt-2 text-[2rem] leading-tight">Que el mercado te avise a ti</h3>
-              <p className="mt-3 text-ink-2">Elige un precio y te avisamos cuando el activo llegue a él, o cuando cambie su señal. Las alertas funcionan mientras tengas Funda abierto en tu navegador.</p>
+              <p className="mt-3 text-ink-2">Elige un precio y te avisamos cuando el activo llegue a él, o cuando cambie su señal. Las alertas funcionan mientras tengas Trace YN abierto en tu navegador.</p>
             </div>
           </div>
         </section>
@@ -284,7 +284,7 @@ export default function Landing() {
               <p className="mt-2 max-w-2xl text-lg text-ink">{entry.definition}</p>
               <p className="mt-4 flex max-w-2xl gap-2.5 border-l-[3px] border-mark pl-3 text-ink-2"><Lightbulb className="mt-1 size-4 shrink-0 text-ink" aria-hidden /> {entry.example}</p>
             </div>
-            <Link to={cta.to} className="link mt-6 inline-flex items-center gap-1.5">Ver los {GLOSSARY.length} términos y preguntarle a Funda IA <ArrowRight className="size-4" aria-hidden /></Link>
+            <Link to={cta.to} className="link mt-6 inline-flex items-center gap-1.5">Ver los {GLOSSARY.length} términos y preguntarle a Trace YN IA <ArrowRight className="size-4" aria-hidden /></Link>
           </div>
         </section>
 
@@ -294,7 +294,7 @@ export default function Landing() {
             <SectionHead n="05" title="Educación, no promesas" />
             <div className="grid gap-px border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
               {[
-                ['No tocamos tu dinero', 'Funda no guarda fondos ni compra por ti. Tú decides dónde y cuándo.'],
+                ['No tocamos tu dinero', 'Trace YN no guarda fondos ni compra por ti. Tú decides dónde y cuándo.'],
                 ['Nunca pedimos tu frase semilla', 'Ni en la app, ni por correo, ni por WhatsApp. Si alguien la pide en nuestro nombre, es una estafa.'],
                 ['Sin comisiones escondidas', 'No recibimos pagos de las plataformas que te mostramos.'],
                 ['Te mostramos el porqué', 'Cada señal viene con sus razones, explicadas en palabras simples.'],
@@ -313,7 +313,7 @@ export default function Landing() {
           <div data-reveal>
             <p className="kicker">06 · Preguntas</p>
             <h2 className="mt-2 text-[clamp(2rem,4.5vw,3rem)] leading-[1.05]">Lo que más nos preguntan</h2>
-            <Link to={cta.to} className="link mt-4 inline-flex items-center gap-1.5"><Sparkles className="size-4" aria-hidden /> ¿Otra duda? Pregúntale a Funda IA</Link>
+            <Link to={cta.to} className="link mt-4 inline-flex items-center gap-1.5"><Sparkles className="size-4" aria-hidden /> ¿Otra duda? Pregúntale a Trace YN IA</Link>
           </div>
           <div data-reveal className="divide-y divide-line border-y border-ink">
             {FAQ.map((f, i) => (

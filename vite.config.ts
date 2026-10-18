@@ -18,7 +18,7 @@ export default defineConfig(({ mode, command }) => {
       react(),
       tailwindcss(),
       {
-        // Social crawlers need absolute URLs: set VITE_SITE_URL (e.g. https://funda.app) once the domain exists
+        // Social crawlers need absolute URLs: set VITE_SITE_URL (e.g. https://traceyn.pages.dev) once the domain exists
         name: 'site-url',
         transformIndexHtml(html) {
           const site = env.VITE_SITE_URL?.replace(/\/$/, '');

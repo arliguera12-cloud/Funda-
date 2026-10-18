@@ -116,7 +116,7 @@ export default function Assistant() {
 
   return (
     <div>
-      <title>Funda IA · Funda</title>
+      <title>Trace YN IA</title>
       <PageHeader
         kicker={aiEnabled ? 'Tutor con IA' : 'Respuestas del glosario'}
         title={<>Pregunta lo que <span className="mark">no entiendas</span></>}
@@ -131,7 +131,7 @@ export default function Assistant() {
       />
 
       <div className="mx-auto mt-6 flex h-[68dvh] min-h-[26rem] max-w-3xl flex-col border border-ink bg-paper">
-        <div ref={list} role="log" aria-label="Conversación con Funda IA" aria-busy={busy} className="flex-1 space-y-7 overflow-y-auto p-4 sm:p-6">
+        <div ref={list} role="log" aria-label="Conversación con Trace YN IA" aria-busy={busy} className="flex-1 space-y-7 overflow-y-auto p-4 sm:p-6">
           {messages.length === 0 && (
             <div>
               <p className="font-display text-[1.7rem] leading-tight font-semibold text-ink">Hola {u.name.split(' ')[0]}, ¿qué quieres aprender hoy?</p>
@@ -153,12 +153,12 @@ export default function Assistant() {
               </div>
             ) : (
               <div key={i} className="animate-fade-up border-l-[3px] border-ink pl-4" style={{ '--rise': '6px', animationDelay: '80ms' } as React.CSSProperties}>
-                <p className="kicker mb-1.5 flex items-center gap-1.5"><Sparkles className="size-3" aria-hidden /> Funda IA</p>
+                <p className="kicker mb-1.5 flex items-center gap-1.5"><Sparkles className="size-3" aria-hidden /> Trace YN IA</p>
                 {m.text ? (
                   <div className="max-w-[40rem] text-[17px] leading-relaxed whitespace-pre-wrap text-ink">{renderBold(m.text)}</div>
                 ) : (
                   <span role="status" className="flex gap-1 py-2" >
-                    <span className="sr-only">Funda IA está escribiendo…</span>
+                    <span className="sr-only">Trace YN IA está escribiendo…</span>
                     {[0, 1, 2].map((d) => <span key={d} aria-hidden className="size-1.5 animate-typing bg-ink" style={{ animationDelay: `${d * 150}ms` }} />)}
                   </span>
                 )}

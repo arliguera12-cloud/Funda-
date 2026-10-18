@@ -32,15 +32,15 @@ const GROUPS = [
 export default function Platforms() {
   return (
     <div>
-      <title>Plataformas · Funda</title>
+      <title>Plataformas · Trace YN</title>
       <PageHeader
         kicker="Plataformas"
         title={<>Dónde <span className="mark">invertir</span> y dónde guardar</>}
-        description="Accesos a los sitios oficiales de plataformas conocidas. ¿Estás en El Salvador? Los precios de Funda ya están en dólares, tu moneda. Antes de registrarte, revisa en el sitio oficial que acepten usuarios de tu país."
+        description="Accesos a los sitios oficiales de plataformas conocidas. ¿Estás en El Salvador? Los precios de Trace YN ya están en dólares, tu moneda. Antes de registrarte, revisa en el sitio oficial que acepten usuarios de tu país."
       />
 
       <Callout tone="warn" icon={ShieldCheck} title="Seguridad primero" className="mt-6">
-        Entra siempre desde estos enlaces o desde las tiendas oficiales de apps, activa la verificación en dos pasos y nunca compartas tu frase semilla ni tus claves. Funda no tiene relación comercial con estas plataformas ni recibe comisiones.
+        Entra siempre desde estos enlaces o desde las tiendas oficiales de apps, activa la verificación en dos pasos y nunca compartas tu frase semilla ni tus claves. Trace YN no tiene relación comercial con estas plataformas ni recibe comisiones.
       </Callout>
 
       <dl className="mt-8 grid gap-px border border-line bg-line md:grid-cols-3">

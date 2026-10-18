@@ -5,7 +5,7 @@ import { fmtPrice, type Asset, type AssetDef } from '../lib/assets';
 import { SIGNAL_META, type Signal, type SignalLevel } from '../lib/indicators';
 import { pct } from '../lib/format';
 
-export const APP_NAME = 'Funda';
+export const APP_NAME = 'Trace YN';
 
 type Icon = ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
 
@@ -292,11 +292,12 @@ export function Segmented<T extends string | number>({
   itemClassName?: string;
 }) {
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
+  const wrap = useRef<HTMLDivElement>(null);
   const ind = useRef<HTMLSpanElement>(null);
   const placed = useRef(false);
   const active = Math.max(0, options.findIndex((o) => o.value === value));
 
-  // El indicador se desliza solo cuando cambia la selección; al cargar, al cambiar el tamaño o al llegar las tipografías salta a su sitio
+  // El indicador mide la opción activa (ancho y posición exactos); se desliza solo cuando cambia la selección y salta a su sitio al cargar, al cambiar el tamaño o al llegar las tipografías
   const place = (snap: boolean) => {
     const b = refs.current[active];
     const el = ind.current;
@@ -304,6 +305,13 @@ export function Segmented<T extends string | number>({
     el.style.transitionDuration = snap ? '0ms' : '';
     el.style.transform = `translateX(${b.offsetLeft}px)`;
     el.style.width = `${b.offsetWidth}px`;
+    // Si las opciones no caben, el contenedor se desplaza (sin mover la página): la activa siempre queda a la vista
+    const w = wrap.current;
+    if (w) {
+      const right = b.offsetLeft + b.offsetWidth;
+      if (b.offsetLeft < w.scrollLeft) w.scrollLeft = b.offsetLeft - 2;
+      else if (right > w.scrollLeft + w.clientWidth) w.scrollLeft = right - w.clientWidth + 2;
+    }
   };
   useLayoutEffect(() => {
     place(!placed.current);
@@ -328,10 +336,11 @@ export function Segmented<T extends string | number>({
   const tabs = mode === 'tabs';
   return (
     <div
+      ref={wrap}
       role={tabs ? 'tablist' : 'radiogroup'}
       aria-label={label}
       onKeyDown={onKeyDown}
-      className={`relative flex rounded-[5px] border border-ink bg-paper p-0.5 ${className}`}
+      className={`relative flex w-fit max-w-full overflow-x-auto rounded-[5px] border border-ink bg-paper p-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${className}`}
     >
       <span ref={ind} aria-hidden className="absolute inset-y-0.5 left-0 rounded-[3px] bg-ink transition-[transform,width] duration-[250ms] ease-[var(--ease-out)]" />
       {options.map((o, i) => {
@@ -350,7 +359,7 @@ export function Segmented<T extends string | number>({
             aria-controls={o.controls}
             tabIndex={on ? 0 : -1}
             onClick={() => onChange(o.value)}
-            className={`relative z-10 min-w-0 flex-1 rounded-[3px] px-2 py-1.5 font-mono text-[11px] sm:px-3 sm:text-xs font-semibold tracking-wide whitespace-nowrap transition-colors pointer-coarse:min-h-10 ${
+            className={`relative z-10 flex-none rounded-[3px] px-3 py-1.5 font-mono text-[11px] font-semibold tracking-wide whitespace-nowrap transition-colors pointer-coarse:min-h-10 focus-visible:outline-offset-[-2px] sm:px-4 sm:text-xs ${
               on ? 'text-on-ink' : 'text-ink-2 hover:text-ink'
             } ${itemClassName}`}
           >

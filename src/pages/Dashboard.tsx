@@ -17,7 +17,7 @@ const SUMMARY_TTL = 30 * 60_000;
 const STEPS: { id: OnboardingStep; label: string; to: string }[] = [
   { id: 'asset', label: 'Abre un activo y mira qué dice su señal', to: '/app/mercado/bitcoin' },
   { id: 'tool', label: 'Prueba la calculadora de interés compuesto', to: '/app/herramientas' },
-  { id: 'ai', label: 'Pregúntale a Funda IA un término que no entiendas', to: '/app/asistente' },
+  { id: 'ai', label: 'Pregúntale a Trace YN IA un término que no entiendas', to: '/app/asistente' },
   { id: 'alert', label: 'Crea tu primera alerta de precio', to: '/app/alertas' },
 ];
 
@@ -37,7 +37,7 @@ function FirstSteps({ uid }: { uid: string }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="kicker">Primeros pasos · {count} de {ONBOARDING_STEPS.length}</p>
-          <h2 id="primeros-pasos" className="mt-1 text-2xl">{count === ONBOARDING_STEPS.length ? 'Listo: ya sabes moverte por Funda' : 'Cuatro pasos para entender el mercado antes de invertir'}</h2>
+          <h2 id="primeros-pasos" className="mt-1 text-2xl">{count === ONBOARDING_STEPS.length ? 'Listo: ya sabes moverte por Trace YN' : 'Cuatro pasos para entender el mercado antes de invertir'}</h2>
         </div>
         <button type="button" className="btn btn-ghost btn-sm" onClick={dismiss}>
           Ocultar
@@ -221,7 +221,7 @@ export default function Dashboard() {
 
   return (
     <div>
-      <title>Mercados · Funda</title>
+      <title>Mercados · Trace YN</title>
       <PageHeader
         kicker="Mercados hoy"
         title={
@@ -229,7 +229,7 @@ export default function Dashboard() {
             {greeting()}, <span className="mark">{u.name.split(' ')[0]}</span>
           </>
         }
-        description="Esto es lo que se mueve hoy, explicado para que decidas con calma. Funda lo revisa por ti cada minuto."
+        description="Esto es lo que se mueve hoy, explicado para que decidas con calma. Trace YN lo revisa por ti cada minuto."
       />
 
       <FirstSteps uid={u.uid} />
@@ -322,10 +322,10 @@ export default function Dashboard() {
               label="Tipo de activo"
               value={tab}
               onChange={setTab}
-              className="mb-5 w-full sm:w-fit"
+              className="mb-5"
               options={[
                 { value: 'todos', label: 'Todos' },
-                ...KINDS.map((k) => ({ value: k, label: KIND_META[k].label, short: KIND_META[k].label.split(' ')[0] })),
+                ...KINDS.map((k) => ({ value: k, label: KIND_META[k].label })),
               ]}
             />
             {tab !== 'todos' && <p className="mb-4 max-w-2xl text-sm text-ink-2">{KIND_META[tab].blurb}</p>}

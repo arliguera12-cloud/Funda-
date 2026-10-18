@@ -10,7 +10,7 @@ const DOCS = {
     title: 'Términos de uso',
     sections: [
       {
-        h: 'Qué es Funda',
+        h: 'Qué es Trace YN',
         p: [
           `${APP_NAME} es una herramienta educativa sobre inversiones y criptomonedas. Muestra precios públicos, indicadores técnicos calculados automáticamente, alertas de precio y explicaciones generadas con inteligencia artificial.`,
         ],
@@ -18,14 +18,14 @@ const DOCS = {
       {
         h: 'No es asesoría financiera',
         p: [
-          'Nada de lo que ves en Funda es una recomendación de compra o venta. Las señales ("favorable", "neutral", "precaución") resumen indicadores técnicos del pasado y no predicen el futuro.',
+          'Nada de lo que ves en Trace YN es una recomendación de compra o venta. Las señales ("favorable", "neutral", "precaución") resumen indicadores técnicos del pasado y no predicen el futuro.',
           'Todas las inversiones pueden perder valor y las criptomonedas son especialmente volátiles: puedes perder parte o todo lo que inviertas. Antes de invertir, infórmate y considera consultar a un asesor autorizado en tu país.',
         ],
       },
       {
         h: 'No custodiamos fondos',
         p: [
-          'Funda no compra, vende, guarda ni transfiere criptomonedas, y nunca te pedirá tu frase semilla ni tus claves privadas. Si alguien te las pide en nombre de Funda, es una estafa.',
+          'Trace YN no compra, vende, guarda ni transfiere criptomonedas, y nunca te pedirá tu frase semilla ni tus claves privadas. Si alguien te las pide en nombre de Trace YN, es una estafa.',
         ],
       },
       {
