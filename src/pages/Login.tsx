@@ -88,7 +88,7 @@ export default function Login({ mode }: { mode: 'login' | 'register' }) {
 
   return (
     <div className="grid min-h-dvh lg:grid-cols-[1fr_1.05fr]">
-      <title>{isLogin ? 'Iniciar sesión · Funda' : 'Crear cuenta · Funda'}</title>
+      <title>{isLogin ? 'Iniciar sesión · Trace YN' : 'Crear cuenta · Trace YN'}</title>
       {/* Portada (solo escritorio) */}
       <aside className="relative hidden flex-col justify-between overflow-hidden border-r border-ink bg-paper-2 p-12 lg:flex">
         <Logo size="lg" />
@@ -197,7 +197,7 @@ export default function Login({ mode }: { mode: 'login' | 'register' }) {
             <>
               <p className="mt-4 text-center text-xs text-ink-2">Gratis · Sin tarjeta · Nunca te pediremos tu frase semilla</p>
               <p className="mt-2 text-center text-xs text-ink-2">
-                Al crear tu cuenta aceptas los <Link to="/terminos" className="link">Términos</Link> y el <Link to="/privacidad" className="link">Aviso de privacidad</Link>. Funda es educativa y no da asesoría financiera.
+                Al crear tu cuenta aceptas los <Link to="/terminos" className="link">Términos</Link> y el <Link to="/privacidad" className="link">Aviso de privacidad</Link>. Trace YN es educativa y no da asesoría financiera.
               </p>
             </>
           )}

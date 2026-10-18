@@ -1,4 +1,4 @@
-// Proxy de Funda (Cloudflare Worker): mantiene las claves de Gemini y Twelve Data fuera del navegador.
+// Proxy de Trace YN (Cloudflare Worker): mantiene las claves de Gemini y Twelve Data fuera del navegador.
 //   GET  /stocks?symbol=SPY,QQQ&outputsize=90   -> Twelve Data (con caché en el borde)
 //   POST /v1beta/models/<modelo>:generateContent | :streamGenerateContent -> Gemini
 // Secretos: GEMINI_API_KEY, TWELVEDATA_KEY. Variable: ALLOWED_ORIGINS (orígenes del sitio, separados por coma).

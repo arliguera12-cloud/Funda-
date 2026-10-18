@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import worker from './index.js';
 
-const env = { GEMINI_API_KEY: 'g-secret', TWELVEDATA_KEY: 't-secret', ALLOWED_ORIGINS: 'https://funda.pages.dev, https://funda.app/' };
+const env = { GEMINI_API_KEY: 'g-secret', TWELVEDATA_KEY: 't-secret', ALLOWED_ORIGINS: 'https://traceyn.pages.dev, https://example.org/' };
 const ctx = { waitUntil: () => {} };
 const call = (path: string, init: RequestInit & { origin?: string } = {}, e: Record<string, string> = env) =>
-  worker.fetch(new Request('https://api.test' + path, { ...init, headers: { origin: init.origin ?? 'https://funda.pages.dev', 'content-type': 'application/json' } }), e, ctx);
+  worker.fetch(new Request('https://api.test' + path, { ...init, headers: { origin: init.origin ?? 'https://traceyn.pages.dev', 'content-type': 'application/json' } }), e, ctx);
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -15,9 +15,9 @@ describe('worker proxy', () => {
   });
 
   it('acepta el origen con barra final en la lista y responde el preflight', async () => {
-    const res = await call('/v1beta/models/x:generateContent', { method: 'OPTIONS', origin: 'https://funda.app' });
+    const res = await call('/v1beta/models/x:generateContent', { method: 'OPTIONS', origin: 'https://example.org' });
     expect(res.status).toBe(204);
-    expect(res.headers.get('access-control-allow-origin')).toBe('https://funda.app');
+    expect(res.headers.get('access-control-allow-origin')).toBe('https://example.org');
   });
 
   it('valida símbolos y tamaño antes de llamar a Twelve Data', async () => {

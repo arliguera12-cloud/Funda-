@@ -9,9 +9,9 @@ import { useMarket } from '../lib/market-context';
 import { AssetMark, Callout, Change, EmptyState, PageHeader, Price, SectionHead, Segmented } from '../components/ui';
 
 const TABS = [
-  { id: 'guias', label: 'Empieza aquí', short: 'Empieza' },
-  { id: 'instrumentos', label: 'Instrumentos', short: 'Instrumentos' },
-  { id: 'glosario', label: 'Glosario', short: 'Glosario' },
+  { id: 'guias', label: 'Empieza aquí' },
+  { id: 'instrumentos', label: 'Instrumentos' },
+  { id: 'glosario', label: 'Glosario' },
 ] as const;
 type TabId = (typeof TABS)[number]['id'];
 
@@ -48,7 +48,7 @@ function Guides() {
                     </ol>
                     <Callout tone="tip" className="mt-5">{guide.tip}</Callout>
                     <Link to={ask(`Tengo una duda sobre: ${guide.title}`)} className="link mt-4 inline-flex min-h-11 items-center gap-1.5 text-sm">
-                      <Sparkles className="size-4" aria-hidden /> Pregúntale a Funda IA <span className="sr-only">sobre {guide.title}</span>
+                      <Sparkles className="size-4" aria-hidden /> Pregúntale a Trace YN IA <span className="sr-only">sobre {guide.title}</span>
                     </Link>
                   </div>
                 </details>
@@ -143,7 +143,7 @@ function Glossary() {
 
       {terms.length === 0 ? (
         <div className="mt-4">
-          <EmptyState icon={SearchX} title={`Sin resultados para «${q}»`} description="Prueba con otra palabra o pregúntale directamente a Funda IA." action={<Link to={ask(`¿Qué significa ${q}?`)} className="btn btn-primary">Pregúntale a Funda IA</Link>} />
+          <EmptyState icon={SearchX} title={`Sin resultados para «${q}»`} description="Prueba con otra palabra o pregúntale directamente a Trace YN IA." action={<Link to={ask(`¿Qué significa ${q}?`)} className="btn btn-primary">Pregúntale a Trace YN IA</Link>} />
         </div>
       ) : (
         <dl className="mt-2 grid gap-x-12 md:grid-cols-2">
@@ -177,7 +177,7 @@ export default function Learn() {
 
   return (
     <div>
-      <title>Aprende · Funda</title>
+      <title>Aprende · Trace YN</title>
       <PageHeader
         kicker="Aprende"
         title={<>Todo lo que conviene saber <span className="mark">antes</span> de invertir</>}
@@ -189,8 +189,7 @@ export default function Learn() {
           label="Secciones de Aprende"
           value={tab}
           onChange={(v) => setParams({ tab: v }, { replace: true })}
-          className="w-full sm:w-fit"
-          options={TABS.map((t) => ({ value: t.id, label: t.label, short: t.short, id: `tab-${t.id}`, controls: `panel-${t.id}` }))}
+          options={TABS.map((t) => ({ value: t.id, label: t.label, id: `tab-${t.id}`, controls: `panel-${t.id}` }))}
         />
       </div>
       <div key={tab} id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`} tabIndex={0} className="mt-8 animate-fade-in outline-none">
