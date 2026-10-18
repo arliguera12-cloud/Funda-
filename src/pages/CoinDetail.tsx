@@ -7,7 +7,7 @@ import { SIGNAL_META } from '../lib/indicators';
 import { compact, pct, usd } from '../lib/format';
 import { COIN_PROFILES } from '../data/learn';
 import PriceChart from '../components/PriceChart';
-import { Change, Disclaimer, SignalBadge, Skeleton } from '../components/ui';
+import { Change, SignalBadge, Skeleton } from '../components/ui';
 
 const RANGES = [
   { label: '24 h', days: 1 },
@@ -115,7 +115,7 @@ export default function CoinDetail() {
           {error ? (
             <div className="grid h-80 place-items-center text-sm text-amber-200">{error}</div>
           ) : history ? (
-            <PriceChart data={history} days={days} />
+            <PriceChart data={history} days={days} label={`Precio de ${coin.name}`} />
           ) : (
             <Skeleton className="h-80" />
           )}
@@ -192,7 +192,6 @@ export default function CoinDetail() {
         </section>
       )}
 
-      <Disclaimer />
     </div>
   );
 }

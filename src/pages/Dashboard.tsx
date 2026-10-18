@@ -7,16 +7,16 @@ import { aiEnabled, marketContext, marketSummary } from '../lib/ai';
 import { SIGNAL_META, type Signal } from '../lib/indicators';
 import type { Coin } from '../lib/market';
 import { compact, pct, usd } from '../lib/format';
-import { Change, Disclaimer, SignalBadge, Skeleton, Sparkline, renderBold } from '../components/ui';
+import { Change, SignalBadge, Skeleton, Sparkline, renderBold } from '../components/ui';
 
 const SUMMARY_KEY = 'funda:ai-summary';
 const SUMMARY_TTL = 30 * 60_000;
 
 function autoSummary(coins: Coin[], signals: Record<string, Signal>): string {
-  const sorted = [...coins].sort((a, b) => b.price_change_percentage_24h - a.price_change_percentage_24h);
+  const sorted = [...coins].sort((a, b) => (b.price_change_percentage_24h ?? 0) - (a.price_change_percentage_24h ?? 0));
   const best = sorted[0];
   const worst = sorted[sorted.length - 1];
-  const up = coins.filter((c) => c.price_change_percentage_24h > 0).length;
+  const up = coins.filter((c) => (c.price_change_percentage_24h ?? 0) > 0).length;
   const fav = coins.filter((c) => signals[c.id]?.level === 'favorable').map((c) => c.name);
   const caution = coins.filter((c) => signals[c.id]?.level === 'precaucion').map((c) => c.name);
   return [
@@ -180,7 +180,6 @@ export default function Dashboard() {
         </Link>
       </section>
 
-      <Disclaimer />
     </div>
   );
 }

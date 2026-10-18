@@ -1,39 +1,159 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Sora", "Inter", ui-sans-serif, sans-serif;
+  --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Bricolage Grotesque", "Geist", ui-sans-serif, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
   --color-ink: #05080f;
   --color-surface: #0b111d;
+  --color-raised: #111a2b;
+  /* Brighter than stock slate-500 so small muted text passes WCAG AA (≥4.5:1) on ink and surface */
+  --color-slate-500: #8190a6;
+  --color-up: #34d399;
+  --color-down: #fb7185;
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --default-transition-duration: 160ms;
+  --default-transition-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
+
+  --animate-fade-up: fade-up 320ms var(--ease-out) backwards;
+  --animate-fade-in: fade-in 220ms var(--ease-out) backwards;
+  --animate-swap-in: swap-in 260ms var(--ease-out) backwards;
+  --animate-ticker: ticker 45s linear infinite;
+  --animate-typing: typing 1s ease-in-out infinite;
+
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(var(--rise, 8px)); }
+  }
+  @keyframes fade-in {
+    from { opacity: 0; }
+  }
+  @keyframes swap-in {
+    from { opacity: 0; filter: blur(4px); }
+  }
+  @keyframes ticker {
+    to { transform: translateX(-50%); }
+  }
+  @keyframes typing {
+    0%, 80%, 100% { opacity: 0.3; transform: translateY(0); }
+    40% { opacity: 1; transform: translateY(-3px); }
+  }
 }
 
 @layer base {
-  html { color-scheme: dark; }
+  html {
+    color-scheme: dark;
+    -webkit-tap-highlight-color: transparent;
+    scrollbar-color: #334155 transparent;
+    /* Keep focused elements clear of the sticky header and mobile bottom nav (WCAG 2.4.11) */
+    scroll-padding-top: 5rem;
+    scroll-padding-bottom: 6rem;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    html { scroll-behavior: smooth; }
+  }
   body { @apply bg-ink font-sans text-slate-200 antialiased; }
-  h1, h2, h3 { @apply font-display tracking-tight text-white; }
+  h1, h2 { @apply font-display tracking-tight text-balance text-white; }
+  h3 { @apply font-sans font-semibold tracking-tight text-balance text-white; }
+  p, li, dd { text-wrap: pretty; }
+  ::selection { background: rgb(52 211 153 / 0.3); color: #fff; }
+  input, textarea { caret-color: var(--color-emerald-400); }
   :focus-visible { @apply outline-2 outline-offset-2 outline-emerald-400; }
+  summary { list-style: none; }
+  summary::-webkit-details-marker { display: none; }
 }
 
 @layer components {
-  .card { @apply rounded-2xl border border-white/[0.07] bg-surface/80 backdrop-blur; }
-  .btn { @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50; }
-  .btn-primary { @apply bg-gradient-to-r from-emerald-400 to-cyan-400 text-ink shadow-lg shadow-emerald-500/20 hover:brightness-110; }
-  .btn-ghost { @apply border border-white/10 bg-white/[0.03] text-slate-200 hover:bg-white/[0.08]; }
-  .input { @apply w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-emerald-400/60 focus:outline-none focus:ring-2 focus:ring-emerald-400/20; }
-  .chip { @apply inline-flex items-center rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-xs font-medium text-slate-300; }
-  .gradient-text { @apply bg-gradient-to-r from-emerald-300 via-cyan-300 to-sky-400 bg-clip-text text-transparent; }
-  .glow { background: radial-gradient(60% 50% at 50% 0%, rgb(16 185 129 / 0.18), transparent 70%); }
+  /* Surfaces */
+  .card { @apply rounded-2xl border border-white/[0.07] bg-surface shadow-[inset_0_1px_0_rgb(255_255_255/0.04)]; }
+  .card-raised { @apply bg-raised bg-gradient-to-b from-white/[0.03] to-transparent; }
+  .card-link { @apply transition-[border-color,background-color,transform] duration-200 hover:border-emerald-400/30 hover:bg-raised active:scale-[0.99]; }
+  .glass { @apply bg-ink/80 backdrop-blur-md; }
+  .glow {
+    background:
+      radial-gradient(50% 60% at 78% 8%, rgb(16 185 129 / 0.14), transparent 70%),
+      radial-gradient(40% 40% at 8% 95%, rgb(6 182 212 / 0.06), transparent 70%);
+  }
+
+  /* Buttons: one size scale; press feedback on every pressable */
+  .btn {
+    @apply inline-flex h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold whitespace-nowrap select-none
+      transition-[background-color,border-color,color,box-shadow,transform,opacity] duration-150 active:scale-[0.97]
+      disabled:pointer-events-none disabled:opacity-50 aria-disabled:cursor-wait aria-disabled:opacity-70;
+  }
+  .btn-sm { @apply h-9 rounded-lg px-3 text-xs; }
+  .btn-lg { @apply h-12 px-6 text-base; }
+  .btn-icon { @apply w-11 px-0; }
+  .btn-sm.btn-icon { @apply w-9; }
+  .btn-primary {
+    @apply bg-emerald-400 text-ink shadow-[inset_0_1px_0_rgb(255_255_255/0.35),0_8px_24px_-10px_rgb(52_211_153/0.55)] hover:bg-emerald-300;
+  }
+  .btn-ghost { @apply border border-white/10 bg-white/[0.03] text-slate-200 hover:border-white/20 hover:bg-white/[0.07] hover:text-white; }
+  .btn-danger { @apply border border-rose-400/30 bg-rose-400/10 text-rose-200 hover:bg-rose-400/20; }
+
+  /* Forms */
+  .input {
+    @apply h-11 w-full rounded-xl border border-white/[0.35] bg-white/[0.03] px-4 text-sm text-white
+      transition-[border-color,box-shadow] placeholder:text-slate-500 hover:border-white/45
+      focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/25 focus:outline-none aria-invalid:border-rose-400;
+  }
+  .label { @apply mb-1.5 block text-sm font-medium text-slate-300; }
+  .hint { @apply mt-2 text-xs text-slate-400; }
+
+  /* Chips: static tags vs pressable filters */
+  .chip { @apply inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-xs font-medium text-slate-300; }
+  .chip-btn {
+    @apply cursor-pointer transition-[border-color,background-color,color,transform] hover:border-white/25 hover:text-white active:scale-[0.97]
+      aria-pressed:border-emerald-400/40 aria-pressed:bg-emerald-400/10 aria-pressed:text-emerald-200;
+  }
+
+  /* Text */
+  .num { @apply font-mono tabular-nums tracking-tight; }
+  .eyebrow { @apply text-sm font-semibold text-emerald-300; }
+  .link { @apply font-medium text-emerald-300 underline decoration-emerald-400/30 underline-offset-4 transition-colors hover:text-emerald-200 hover:decoration-current; }
 }
 
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: none; }
+/* Scroll reveal (Landing): elements fade in once when they enter the viewport */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 600ms var(--ease-out), transform 600ms var(--ease-out);
+  transition-delay: calc(var(--i, 0) * 70ms);
+}
+[data-reveal][data-visible] { opacity: 1; transform: none; }
+
+/* Subtle film grain for depth; static and non-interactive so scrolling stays cheap */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
-@keyframes ticker {
-  to { transform: translateX(-50%); }
+/* Animated <details> (Chromium today; other browsers simply open instantly) */
+@supports (interpolate-size: allow-keywords) {
+  :root { interpolate-size: allow-keywords; }
+  details::details-content {
+    block-size: 0;
+    overflow-y: clip;
+    opacity: 0;
+    transition: block-size 260ms var(--ease-out), opacity 200ms var(--ease-out), content-visibility 260ms allow-discrete;
+  }
+  details[open]::details-content { block-size: auto; opacity: 1; }
 }
 
+/* Reduced motion = no movement, but keep gentle fades, color changes and loading spinners */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation: none !important; transition: none !important; }
+  *, ::before, ::after {
+    --rise: 0px !important;
+    transition-property: color, background-color, border-color, opacity, box-shadow !important;
+    scroll-behavior: auto !important;
+  }
+  .animate-ticker, .animate-pulse, .animate-ping, .animate-typing { animation: none !important; }
+  [data-reveal] { transform: none; }
 }

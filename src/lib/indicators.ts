@@ -99,8 +99,8 @@ export function analyze(closes: number[]): Signal {
   return { level, score, rsi: r, smaShort, smaLong, change7d, volatility: vol, reasons };
 }
 
-export const SIGNAL_META: Record<SignalLevel, { label: string; short: string; tone: string }> = {
-  favorable: { label: 'Momento favorable', short: 'Favorable', tone: 'emerald' },
-  neutral: { label: 'Esperar / Neutral', short: 'Neutral', tone: 'amber' },
-  precaucion: { label: 'Precaución', short: 'Precaución', tone: 'rose' },
+export const SIGNAL_META: Record<SignalLevel, { label: string; short: string; hint: string; tone: 'emerald' | 'amber' | 'rose'; bars: number }> = {
+  favorable: { label: 'Señal favorable', short: 'Favorable', hint: 'La mayoría de los indicadores están a favor.', tone: 'emerald', bars: 3 },
+  neutral: { label: 'Señal neutral', short: 'Neutral', hint: 'Indicadores mixtos: suele convenir esperar.', tone: 'amber', bars: 2 },
+  precaucion: { label: 'Señal de precaución', short: 'Precaución', hint: 'Subió muy rápido o la tendencia es bajista.', tone: 'rose', bars: 1 },
 };

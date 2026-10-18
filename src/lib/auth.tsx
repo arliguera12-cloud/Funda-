@@ -1,17 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { initializeApp } from 'firebase/app';
-import {
-  GoogleAuthProvider,
-  createUserWithEmailAndPassword,
-  getAuth,
-  onAuthStateChanged,
-  sendPasswordResetEmail,
-  signInWithEmailAndPassword,
-  signInWithPopup,
-  signOut as fbSignOut,
-  updateProfile,
-  type Auth,
-} from 'firebase/auth';
+import { store } from './storage';
 
 export interface User {
   uid: string;
@@ -31,98 +19,147 @@ interface AuthCtx {
   signOut(): Promise<void>;
 }
 
-const env = import.meta.env;
-const auth: Auth | null = env.VITE_FIREBASE_API_KEY
-  ? getAuth(
-      initializeApp({
-        apiKey: env.VITE_FIREBASE_API_KEY,
-        authDomain: env.VITE_FIREBASE_AUTH_DOMAIN,
-        projectId: env.VITE_FIREBASE_PROJECT_ID,
-        appId: env.VITE_FIREBASE_APP_ID,
-      }),
-    )
-  : null;
+const configured = !!import.meta.env.VITE_FIREBASE_API_KEY;
+const fb = configured ? import('./firebase') : null;
 
 const DEMO_KEY = 'funda:demo-session';
 const Ctx = createContext<AuthCtx | null>(null);
+
+/** Validation errors written for the user; anything else gets a generic message. */
+export class FormError extends Error {
+  field?: 'name' | 'email' | 'password';
+  constructor(message: string, field?: FormError['field']) {
+    super(message);
+    this.field = field;
+  }
+}
 
 const ERRORS: Record<string, string> = {
   'auth/invalid-credential': 'Correo o contraseña incorrectos.',
   'auth/wrong-password': 'Correo o contraseña incorrectos.',
   'auth/user-not-found': 'No existe una cuenta con ese correo.',
-  'auth/email-already-in-use': 'Ya existe una cuenta con ese correo.',
+  'auth/email-already-in-use': 'Ya existe una cuenta con ese correo. Inicia sesión.',
   'auth/weak-password': 'La contraseña debe tener al menos 6 caracteres.',
   'auth/invalid-email': 'El correo no es válido.',
+  'auth/missing-password': 'Escribe tu contraseña.',
   'auth/too-many-requests': 'Demasiados intentos. Espera un momento e inténtalo de nuevo.',
   'auth/popup-closed-by-user': 'Se cerró la ventana de Google antes de terminar.',
+  'auth/popup-blocked': 'Tu navegador bloqueó la ventana de Google. Permite las ventanas emergentes e inténtalo de nuevo.',
+  'auth/account-exists-with-different-credential': 'Ese correo ya está registrado con otro método. Entra con tu correo y contraseña.',
+  'auth/user-disabled': 'Esta cuenta está desactivada.',
+  'auth/unauthorized-domain': 'El inicio de sesión aún no está habilitado en este sitio.',
+  'auth/operation-not-allowed': 'Este método de acceso no está habilitado.',
   'auth/network-request-failed': 'Sin conexión. Revisa tu internet.',
+  // User cancelled; not an error worth showing
+  'auth/cancelled-popup-request': '',
 };
 
 export function authError(e: unknown): string {
+  if (e instanceof FormError) return e.message;
   const code = (e as { code?: string })?.code ?? '';
-  return ERRORS[code] ?? (e instanceof Error ? e.message : 'Ocurrió un error inesperado.');
+  if (code in ERRORS) return ERRORS[code];
+  console.error(e);
+  return 'No pudimos completar el acceso. Inténtalo de nuevo en unos segundos.';
 }
 
-function validate(email: string, password: string) {
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error(ERRORS['auth/invalid-email']);
-  if (password.length < 6) throw new Error(ERRORS['auth/weak-password']);
+export function authErrorField(e: unknown): FormError['field'] {
+  if (e instanceof FormError) return e.field;
+  const code = (e as { code?: string })?.code ?? '';
+  if (code === 'auth/invalid-email' || code === 'auth/user-not-found' || code === 'auth/email-already-in-use') return 'email';
+  if (code === 'auth/weak-password' || code === 'auth/missing-password' || code === 'auth/invalid-credential' || code === 'auth/wrong-password') return 'password';
+  return undefined;
 }
+
+export const isEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+
+function validate(email: string, password: string) {
+  if (!isEmail(email)) throw new FormError('Escribe un correo válido, por ejemplo tu@correo.com.', 'email');
+  if (password.length < 6) throw new FormError('La contraseña debe tener al menos 6 caracteres.', 'password');
+}
+
+const nameFromEmail = (email: string) => {
+  const n = email.split('@')[0];
+  return n.charAt(0).toUpperCase() + n.slice(1);
+};
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!auth) {
-      try {
-        setUser(JSON.parse(localStorage.getItem(DEMO_KEY) ?? 'null'));
-      } catch {
-        /* no stored session */
-      }
+    if (!fb) {
+      setUser(store.get<User | null>(DEMO_KEY, null));
       setLoading(false);
       return;
     }
-    return onAuthStateChanged(auth, (u) => {
-      setUser(u ? { uid: u.uid, name: u.displayName || u.email!.split('@')[0], email: u.email ?? '', photoURL: u.photoURL } : null);
+    let unsub = () => {};
+    let live = true;
+    fb.then((m) => {
+      if (!live) return;
+      unsub = m.onAuthStateChanged(m.auth, (u) => {
+        setUser(u ? { uid: u.uid, name: u.displayName || nameFromEmail(u.email ?? 'usuario'), email: u.email ?? '', photoURL: u.photoURL } : null);
+        setLoading(false);
+      });
+    }).catch((e) => {
+      console.error(e);
       setLoading(false);
     });
+    return () => {
+      live = false;
+      unsub();
+    };
   }, []);
 
-  // shortcut: demo mode keeps only name+email locally (no password), switch to Firebase before going public.
+  // shortcut: demo mode keeps only name+email locally (no password); configure Firebase before going public.
   const demoLogin = (name: string, email: string) => {
-    const u = { uid: `demo-${email.toLowerCase()}`, name, email };
-    localStorage.setItem(DEMO_KEY, JSON.stringify(u));
+    const u = { uid: `demo-${email.trim().toLowerCase()}`, name, email: email.trim() };
+    store.set(DEMO_KEY, u);
     setUser(u);
   };
 
   const value: AuthCtx = {
     user,
     loading,
-    demo: !auth,
+    demo: !configured,
     async signIn(email, password) {
       validate(email, password);
-      if (!auth) return demoLogin(email.charAt(0).toUpperCase() + email.slice(1).split('@')[0], email);
-      await signInWithEmailAndPassword(auth, email, password);
+      if (!fb) return demoLogin(nameFromEmail(email.trim()), email);
+      const m = await fb;
+      await m.signInWithEmailAndPassword(m.auth, email.trim(), password);
     },
     async signUp(name, email, password) {
-      if (!name.trim()) throw new Error('Escribe tu nombre.');
+      if (!name.trim()) throw new FormError('Escribe tu nombre.', 'name');
       validate(email, password);
-      if (!auth) return demoLogin(name.trim(), email);
-      const cred = await createUserWithEmailAndPassword(auth, email, password);
-      await updateProfile(cred.user, { displayName: name.trim() });
-      setUser({ uid: cred.user.uid, name: name.trim(), email, photoURL: null });
+      if (!fb) return demoLogin(name.trim(), email);
+      const m = await fb;
+      const cred = await m.createUserWithEmailAndPassword(m.auth, email.trim(), password);
+      await m.updateProfile(cred.user, { displayName: name.trim() });
+      setUser({ uid: cred.user.uid, name: name.trim(), email: email.trim(), photoURL: null });
     },
     async signInWithGoogle() {
-      if (!auth) throw new Error('El acceso con Google requiere configurar Firebase.');
-      await signInWithPopup(auth, new GoogleAuthProvider());
+      if (!fb) throw new FormError('Esta opción no está disponible por ahora.');
+      const m = await fb;
+      const provider = new m.GoogleAuthProvider();
+      try {
+        await m.signInWithPopup(m.auth, provider);
+      } catch (e) {
+        // Mobile Safari and embedded previews block popups: fall back to a full-page redirect
+        if ((e as { code?: string })?.code === 'auth/popup-blocked') return m.signInWithRedirect(m.auth, provider);
+        throw e;
+      }
     },
     async resetPassword(email) {
-      if (!auth) throw new Error('La recuperación de contraseña requiere configurar Firebase.');
-      await sendPasswordResetEmail(auth, email);
+      if (!fb) throw new FormError('La recuperación de contraseña no está disponible por ahora.');
+      if (!isEmail(email)) throw new FormError('Escribe tu correo arriba para enviarte el enlace.', 'email');
+      const m = await fb;
+      await m.sendPasswordResetEmail(m.auth, email.trim());
     },
     async signOut() {
-      if (auth) await fbSignOut(auth);
-      localStorage.removeItem(DEMO_KEY);
+      if (fb) {
+        const m = await fb;
+        await m.signOut(m.auth);
+      }
+      store.del(DEMO_KEY);
       setUser(null);
     },
   };

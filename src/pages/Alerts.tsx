@@ -4,7 +4,6 @@ import { BellOff, BellRing, CircleCheck, Plus, Trash } from 'lucide-react';
 import { useAlerts } from '../lib/alerts';
 import { useMarket } from '../lib/market-context';
 import { usd } from '../lib/format';
-import { Disclaimer } from '../components/ui';
 
 export default function Alerts() {
   const { coins } = useMarket();
@@ -162,7 +161,6 @@ export default function Alerts() {
       </div>
 
       <p className="text-xs text-slate-500">Las alertas funcionan mientras Funda esté abierto en alguna pestaña de tu navegador.</p>
-      <Disclaimer />
     </div>
   );
 }

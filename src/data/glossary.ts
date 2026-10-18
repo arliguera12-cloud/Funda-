@@ -53,7 +53,7 @@ export const GLOSSARY: Term[] = [
   },
   {
     term: 'Dirección',
-    aliases: ['address', 'direccion de billetera', 'recibir cripto', 'como recibo'],
+    aliases: ['address', 'dirección de billetera', 'recibir cripto', 'recibir criptomonedas', 'recibo criptomonedas', 'como recibo', 'cómo recibo'],
     category: 'Básicos',
     definition: 'Código público (letras y números) que identifica tu billetera para recibir cripto. Se puede compartir sin riesgo, a menudo como código QR.',
     example: 'Es como tu número de cuenta bancaria: se lo das a quien te va a pagar.',

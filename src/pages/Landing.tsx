@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom';
 import { Activity, ArrowRight, BellRing, BookOpen, Bot, ChartLine, GraduationCap, ShieldCheck, Sparkles, Wallet, Zap } from 'lucide-react';
 import { useAuth } from '../lib/auth';
+import { PublicFooter } from '../components/PublicChrome';
 import { useMarket } from '../lib/market-context';
 import { usd } from '../lib/format';
-import { APP_NAME, Change, Disclaimer, Logo, SignalBadge, Skeleton, Sparkline } from '../components/ui';
+import { APP_NAME, Change, Logo, SignalBadge, Skeleton, Sparkline } from '../components/ui';
 
 const FEATURES = [
   { icon: ChartLine, title: 'Precios en vivo', text: 'Bitcoin, Ethereum, XRP, BNB y Solana actualizados cada minuto, con gráficas de 24 horas a 1 año.' },
@@ -252,22 +253,7 @@ export default function Landing() {
         </div>
       </section>
 
-      <footer className="border-t border-white/[0.06]">
-        <div className="mx-auto max-w-6xl space-y-6 px-4 py-10 sm:px-6">
-          <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-center">
-            <Logo />
-            <p className="text-sm text-slate-500">
-              Datos de precios por{' '}
-              <a href="https://www.coingecko.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-slate-300">
-                CoinGecko
-              </a>{' '}
-              · IA por Google Gemini
-            </p>
-          </div>
-          <Disclaimer />
-          <p className="text-xs text-slate-600">© {new Date().getFullYear()} {APP_NAME}. Todos los derechos reservados.</p>
-        </div>
-      </footer>
+      <PublicFooter />
     </div>
   );
 }
