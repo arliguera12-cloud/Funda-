@@ -53,11 +53,16 @@ Todo se guarda en caché local: la app muestra al instante los últimos datos, a
 
 El proyecto usa la misma base que generan las apps de AI Studio (Build): **React + TypeScript + Vite + `@google/genai`**, la clave en `GEMINI_API_KEY` y `metadata.json`. Sube o pega los archivos respetando la estructura y usa **Deploy** de AI Studio (Cloud Run), que mantiene la clave del lado del servidor.
 
-> ⚠️ Si publicas `npm run build` en un hosting estático (Netlify, Vercel, GitHub Pages), la clave de Gemini y la de Twelve Data quedan visibles en el navegador (el build lo advierte). Para publicar fuera de AI Studio, mueve esas llamadas a un backend o, como mínimo, restringe las claves a tu dominio y fija un límite diario de uso.
+## Publicar gratis (Cloudflare)
+
+Sitio en Cloudflare Pages y un Worker (`worker/`) que guarda las claves de Gemini y Twelve Data y cachea la bolsa. Con `VITE_API_PROXY` apuntando al Worker, **ninguna clave llega al navegador**. Pasos exactos en [`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md).
+
+> ⚠️ Si publicas `npm run build` en un hosting estático sin el Worker (Netlify, Vercel, GitHub Pages), la clave de Gemini y la de Twelve Data quedan visibles en el navegador (el build lo advierte). Para publicar fuera de AI Studio, mueve esas llamadas a un backend o, como mínimo, restringe las claves a tu dominio y fija un límite diario de uso.
 
 ## Estructura
 
 ```
+worker/         Proxy de Cloudflare (Gemini + Twelve Data), con pruebas
 src/
   pages/        Landing, Login, Dashboard (Mercados), AssetDetail, Alerts, Tools, Assistant, Learn, Platforms, Legal
   components/   AppLayout, PublicChrome, MarketTape, PriceChart, ThemeToggle, Toaster, ui (sistema visual)

@@ -1,12 +1,15 @@
 // Bolsa y ETFs: Twelve Data (plan gratuito con clave propia; admite CORS).
-// Sin VITE_TWELVEDATA_KEY esta sección queda desactivada y la app lo explica.
+// Con VITE_API_PROXY las consultas pasan por el Worker (clave en el servidor y caché compartida).
+// Sin proxy ni VITE_TWELVEDATA_KEY esta sección queda desactivada y la app lo explica.
 import { finite, getJSON, peekCached, type Cached } from './http';
 import type { PricePoint } from './market';
 
 const API = 'https://api.twelvedata.com/time_series';
 const KEY = import.meta.env.VITE_TWELVEDATA_KEY as string | undefined;
 
-export const stocksEnabled = !!KEY;
+const PROXY = (import.meta.env.VITE_API_PROXY as string | undefined)?.replace(/\/$/, '');
+
+export const stocksEnabled = !!(PROXY || KEY);
 export const STOCK_SYMBOLS = ['SPY', 'QQQ', 'TLT', 'GLD'];
 
 export type StockSeries = Record<string, PricePoint[]>;
@@ -38,13 +41,13 @@ export function parseTwelve(v: unknown, symbols: string[]): StockSeries {
 
 // La clave va en la URL pero nunca en el nombre de la caché
 const url = (symbols: string[], size: number) =>
-  `${API}?symbol=${symbols.join(',')}&interval=1day&outputsize=${size}&apikey=${KEY ?? ''}`;
+  PROXY ? `${PROXY}/stocks?symbol=${symbols.join(',')}&outputsize=${size}` : `${API}?symbol=${symbols.join(',')}&interval=1day&outputsize=${size}&apikey=${KEY ?? ''}`;
 const cacheKey = (symbols: string[], size: number) => `td:${symbols.join(',')}:${size}`;
 
 export const fetchStocks = (force = false): Promise<Cached<StockSeries>> =>
   getJSON(url(STOCK_SYMBOLS, 90), 30 * 60_000, (v) => parseTwelve(v, STOCK_SYMBOLS), { force, cacheKey: cacheKey(STOCK_SYMBOLS, 90) });
 
-export const peekStocks = () => (KEY ? peekCached(cacheKey(STOCK_SYMBOLS, 90), (v) => v as StockSeries) : null);
+export const peekStocks = () => (stocksEnabled ? peekCached(cacheKey(STOCK_SYMBOLS, 90), (v) => v as StockSeries) : null);
 
 export async function fetchStockHistory(symbol: string, days: number): Promise<PricePoint[]> {
   // outputsize cuenta días de mercado, no calendario: ~252 por año

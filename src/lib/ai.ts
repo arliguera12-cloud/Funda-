@@ -4,13 +4,15 @@ import { SIGNAL_META, type Signal } from './indicators';
 import { pct } from './format';
 
 const apiKey = process.env.API_KEY;
+// Con VITE_API_PROXY (Worker de Funda) la clave de Gemini vive en el servidor y el navegador no la ve
+const proxy = (import.meta.env.VITE_API_PROXY as string | undefined)?.replace(/\/$/, '');
 const MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest';
 
-// shortcut: the key ships in the client bundle (AI Studio convention); deploy via AI Studio/Cloud Run proxy or add a backend before going public.
-export const aiEnabled = !!apiKey;
+// shortcut: sin VITE_API_PROXY la clave viaja en el bundle (convención de AI Studio); en un hosting público usa el Worker.
+export const aiEnabled = !!(proxy || apiKey);
 // The SDK is only downloaded when a key is configured and the AI is actually used
 let aiPromise: Promise<GoogleGenAI> | null = null;
-const getAI = () => (aiPromise ??= import('@google/genai').then(({ GoogleGenAI }) => new GoogleGenAI({ apiKey })));
+const getAI = () => (aiPromise ??= import('@google/genai').then(({ GoogleGenAI }) => new GoogleGenAI(proxy ? { apiKey: 'proxy', httpOptions: { baseUrl: proxy } } : { apiKey })));
 
 const SYSTEM = `Eres "Funda IA", un tutor de inversiones y mercados para principiantes de Latinoamérica (el público principal vive en El Salvador, donde la moneda es el dólar).
 Cubres inversión en general: ahorro, interés compuesto, inflación, acciones, bonos, ETFs, oro, divisas y criptomonedas.

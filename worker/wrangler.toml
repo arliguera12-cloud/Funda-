@@ -1,0 +1,10 @@
+name = "funda-api"
+main = "index.js"
+compatibility_date = "2025-01-01"
+
+# Orígenes del sitio que pueden usar el proxy (sin barra final). Cámbialo por tu dominio real.
+[vars]
+ALLOWED_ORIGINS = "https://funda.pages.dev"
+
+# Secretos (no van aquí): npx wrangler secret put GEMINI_API_KEY | TWELVEDATA_KEY
+# o en el panel: Workers & Pages > funda-api > Settings > Variables and Secrets.
