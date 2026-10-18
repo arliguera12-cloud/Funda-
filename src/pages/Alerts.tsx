@@ -1,136 +1,263 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { BellOff, BellRing, CircleCheck, Plus, Trash } from 'lucide-react';
+import { BellOff, BellRing, Check, ChevronDown, CircleCheck, Info, Plus, Trash2 } from 'lucide-react';
 import { useAlerts } from '../lib/alerts';
+import { KIND_META, defOf, fmtPrice } from '../lib/assets';
+import { pct } from '../lib/format';
 import { useMarket } from '../lib/market-context';
-import { usd } from '../lib/format';
+import { prefersReducedMotion, AssetMark, Callout, EmptyState, PageHeader, Price, SectionHead, Skeleton } from '../components/ui';
+
+const CHIPS = [-10, -5, 5, 10];
+
+function Switch({ on, onChange, label, id }: { on: boolean; onChange(v: boolean): void; label: string; id: string }) {
+  return (
+    <button
+      id={id}
+      type="button"
+      role="switch"
+      aria-checked={on}
+      aria-label={label}
+      onClick={() => onChange(!on)}
+      className="relative h-7 w-12 shrink-0 rounded-[4px] border border-ink bg-paper transition-colors aria-checked:bg-ink pointer-coarse:my-2"
+    >
+      <span className={`absolute top-0.5 left-0.5 size-5 rounded-[2px] border border-ink bg-mark transition-transform duration-200 ease-[var(--ease-out)] ${on ? 'translate-x-5' : ''}`} />
+    </button>
+  );
+}
 
 export default function Alerts() {
-  const { coins } = useMarket();
-  const { alerts, addAlert, removeAlert, signalNotify, setSignalNotify, permission, requestPermission } = useAlerts();
+  const { assets, signalsReady } = useMarket();
+  const { alerts, addAlert, removeAlert, restoreAlert, signalNotify, setSignalNotify, permission, requestPermission, toast } = useAlerts();
   const [params] = useSearchParams();
-  const [coinId, setCoinId] = useState(params.get('coin') ?? 'bitcoin');
-  const [price, setPrice] = useState('');
-  const coin = coins.find((c) => c.id === coinId);
-  const target = Number(price);
-  const valid = coin && target > 0 && target !== coin.current_price;
-  // Direction is inferred so an alert never fires the instant it is created
-  const direction = coin && target > coin.current_price ? 'above' : 'below';
+  const [picked, setPicked] = useState<string | null>(params.get('activo'));
+  const [price, setPrice] = useState<string | null>(null); // null = el usuario aún no lo tocó
+  const [justCreated, setJustCreated] = useState(false);
+  const priceRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLHeadingElement>(null);
+  const mounted = useRef(Date.now());
+
+  const asset = assets.find((a) => a.id === picked) ?? assets.find((a) => a.id === 'bitcoin') ?? assets[0];
+  const suggested = asset ? String(Number((asset.price * 1.05).toPrecision(4))) : '';
+  const shown = price ?? suggested;
+  const target = Number(shown.replace(/[,\s$]/g, ''));
+  const valid = !!asset && Number.isFinite(target) && target > 0 && target !== asset.price;
+  const direction = asset && target > asset.price ? 'above' : 'below';
+  const dist = asset && valid ? (target / asset.price - 1) * 100 : null;
+  const hint = !asset
+    ? ''
+    : !shown
+      ? 'Escribe el precio al que quieres que te avisemos.'
+      : !Number.isFinite(target) || target <= 0
+        ? 'Escribe un precio mayor que 0.'
+        : target === asset.price
+          ? 'Elige un precio distinto al actual: así sabemos si avisarte al subir o al bajar.'
+          : `Te avisaremos cuando ${direction === 'above' ? 'suba' : 'baje'} a ${fmtPrice(asset, target)} (${pct(dist)} desde ahora).`;
 
   useEffect(() => {
-    if (coin && !price) setPrice(String(Number(coin.current_price.toPrecision(4))));
-  }, [coin, price]);
+    if (!justCreated) return;
+    const t = setTimeout(() => setJustCreated(false), 1800);
+    return () => clearTimeout(t);
+  }, [justCreated]);
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    if (!valid) return;
-    addAlert({ coinId, coinName: coin.name, direction, price: target });
-    setPrice('');
+    if (!asset || !valid) return;
+    const dirWord = direction === 'above' ? 'suba' : 'baje';
+    addAlert({ assetId: asset.id, assetName: asset.name, direction, price: target });
+    toast({ tone: 'success', title: 'Alerta creada', body: `Te avisaremos cuando ${asset.name} ${dirWord} a ${fmtPrice(asset, target)}.` });
+    setPrice(null);
+    setJustCreated(true);
+    priceRef.current?.focus();
+    if (matchMedia('(max-width: 1023px)').matches) document.getElementById('alertas-activas')?.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'start' });
   };
 
   const active = alerts.filter((a) => !a.triggeredAt);
   const done = alerts.filter((a) => a.triggeredAt);
+  const focusList = () => requestAnimationFrame(() => listRef.current?.focus());
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold sm:text-3xl">Alertas automáticas</h1>
-        <p className="mt-1 text-slate-400">Funda vigila el mercado cada minuto y te avisa cuando pase algo importante.</p>
-      </div>
+    <div>
+      <title>Alertas · Funda</title>
+      <PageHeader
+        kicker="Alertas"
+        title={
+          <>
+            Que el mercado te <span className="mark">avise</span> a ti
+          </>
+        }
+        description="Elige un precio y te avisamos cuando el activo llegue a él. Revisamos el mercado cada minuto mientras tengas Funda abierto."
+      />
 
-      {permission !== 'granted' && (
-        <div className="card flex flex-wrap items-center justify-between gap-4 border-emerald-400/20 p-5">
-          <div className="flex items-start gap-3">
-            <BellRing className="mt-0.5 h-5 w-5 text-emerald-400" aria-hidden />
-            <div>
-              <p className="font-semibold text-white">Activa las notificaciones del navegador</p>
-              <p className="text-sm text-slate-400">
-                {permission === 'denied'
-                  ? 'Las bloqueaste antes. Actívalas desde el candado de la barra de direcciones. Mientras tanto verás los avisos dentro de la app.'
-                  : permission === 'unsupported'
-                    ? 'Tu navegador no admite notificaciones; verás los avisos dentro de la app.'
-                    : 'Así te avisamos aunque estés en otra pestaña.'}
-              </p>
-            </div>
-          </div>
-          {permission === 'default' && (
-            <button className="btn btn-primary" onClick={requestPermission}>
-              Activar
+      {alerts.length > 0 && permission === 'default' && (
+        <Callout
+          tone="info"
+          icon={BellRing}
+          title="¿Te avisamos aunque estés en otra pestaña?"
+          className="mt-6"
+          action={
+            <button className="btn btn-ghost btn-sm" onClick={requestPermission}>
+              Activar avisos
             </button>
-          )}
-        </div>
+          }
+        >
+          Activa las notificaciones del navegador para no perderte tus alertas.
+        </Callout>
+      )}
+      {alerts.length > 0 && permission === 'denied' && (
+        <Callout tone="warn" className="mt-6">
+          Bloqueaste las notificaciones del navegador. Actívalas desde el candado de la barra de direcciones; mientras tanto verás los avisos dentro de la app.
+        </Callout>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-5">
-        <form onSubmit={submit} className="card space-y-4 p-5 lg:col-span-2">
-          <h2 className="font-semibold">Nueva alerta de precio</h2>
-          <div>
-            <label htmlFor="coin" className="mb-1.5 block text-sm text-slate-300">Criptomoneda</label>
-            <select
-              id="coin"
-              className="input"
-              value={coinId}
-              onChange={(e) => {
-                setCoinId(e.target.value);
-                setPrice('');
-              }}
-            >
-              {coins.map((c) => (
-                <option key={c.id} value={c.id} className="bg-surface">
-                  {c.name} ({c.symbol.toUpperCase()})
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label htmlFor="price" className="mb-1.5 block text-sm text-slate-300">Precio objetivo (USD)</label>
-            <input id="price" type="number" min="0" step="any" inputMode="decimal" className="input" value={price} onChange={(e) => setPrice(e.target.value)} />
-            {coin && (
-              <p className="mt-2 text-xs text-slate-500">
-                Precio actual: {usd(coin.current_price)}.{' '}
-                {valid && (
-                  <span className="text-emerald-300">
-                    Te avisaremos cuando {direction === 'above' ? 'suba' : 'baje'} a {usd(target)}.
+      <div className="mt-8 grid gap-10 lg:grid-cols-[1fr_1.2fr]">
+        <div className="space-y-8">
+          <form onSubmit={submit} className="panel-hard space-y-5 p-5 sm:p-6" noValidate>
+            <h2 className="text-2xl">Nueva alerta de precio</h2>
+            {!asset ? (
+              <Skeleton className="h-40" />
+            ) : (
+              <>
+                <div>
+                  <label htmlFor="activo" className="label">Activo</label>
+                  <div className="relative">
+                    <select
+                      id="activo"
+                      className="input appearance-none pr-10"
+                      value={asset.id}
+                      onChange={(e) => {
+                        setPicked(e.target.value);
+                        setPrice(null);
+                      }}
+                    >
+                      {(['cripto', 'bolsa', 'divisa'] as const).map((k) => {
+                        const group = assets.filter((a) => a.kind === k);
+                        return group.length ? (
+                          <optgroup key={k} label={KIND_META[k].long}>
+                            {group.map((a) => (
+                              <option key={a.id} value={a.id}>
+                                {a.name} ({a.symbol})
+                              </option>
+                            ))}
+                          </optgroup>
+                        ) : null;
+                      })}
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute top-1/2 right-3.5 size-4 -translate-y-1/2 text-ink-2" aria-hidden />
+                  </div>
+                </div>
+                <div>
+                  <label htmlFor="precio" className="label">
+                    {asset.unit === 'usd' ? 'Precio objetivo (USD)' : `Valor objetivo (${asset.symbol} por 1 USD)`}
+                  </label>
+                  <div className="relative">
+                    {asset.unit === 'usd' && <span aria-hidden className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-ink-2">$</span>}
+                    <input
+                      ref={priceRef}
+                      id="precio"
+                      type="text"
+                      inputMode="decimal"
+                      autoComplete="off"
+                      className={`input num ${asset.unit === 'usd' ? 'pl-8' : ''}`}
+                      value={shown}
+                      onChange={(e) => setPrice(e.target.value)}
+                      aria-invalid={!valid && shown !== '' ? true : undefined}
+                      aria-describedby="precio-ayuda"
+                    />
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="Atajos de porcentaje">
+                    {CHIPS.map((p) => (
+                      <button
+                        key={p}
+                        type="button"
+                        className="chip-btn num !px-2.5 !py-1 text-xs pointer-coarse:min-h-10"
+                        onClick={() => setPrice(String(Number((asset.price * (1 + p / 100)).toPrecision(4))))}
+                      >
+                        {p > 0 ? '+' : ''}
+                        {p}%
+                      </button>
+                    ))}
+                  </div>
+                  <p id="precio-ayuda" aria-live="polite" className={`mt-3 text-sm ${valid ? 'text-ink' : 'text-warn'}`}>
+                    <span className="text-ink-2">
+                      Ahora: <Price value={asset.price} asset={asset} />.{' '}
+                    </span>
+                    {hint}
+                  </p>
+                </div>
+                <button type="submit" className="btn btn-primary w-full" aria-disabled={!valid || undefined}>
+                  <span key={String(justCreated)} className="animate-swap-in inline-flex items-center gap-2">
+                    {justCreated ? (
+                      <>
+                        <Check className="size-4" aria-hidden /> Alerta creada
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="size-4" aria-hidden /> Crear alerta
+                      </>
+                    )}
                   </span>
-                )}
-              </p>
+                </button>
+                <p className="flex items-start gap-2 text-xs text-ink-2">
+                  <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+                  Las alertas se revisan solo mientras Funda está abierto en tu navegador.
+                </p>
+              </>
             )}
-          </div>
-          <button type="submit" className="btn btn-primary w-full" disabled={!valid}>
-            <Plus className="h-4 w-4" aria-hidden /> Crear alerta
-          </button>
+          </form>
 
-          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/[0.06] p-4">
-            <input type="checkbox" className="mt-1 h-4 w-4 accent-emerald-400" checked={signalNotify} onChange={(e) => setSignalNotify(e.target.checked)} />
-            <span>
-              <span className="block text-sm font-semibold text-white">Avisarme cuando cambie una señal</span>
-              <span className="text-xs text-slate-400">Por ejemplo, cuando Bitcoin pase de "Neutral" a "Momento favorable".</span>
-            </span>
-          </label>
-        </form>
-
-        <section className="card p-5 lg:col-span-3">
-          <h2 className="font-semibold">Alertas activas ({active.length})</h2>
-          {active.length === 0 ? (
-            <div className="grid place-items-center py-12 text-center text-sm text-slate-500">
-              <BellOff className="mb-3 h-8 w-8" aria-hidden />
-              Aún no tienes alertas. Crea la primera a la izquierda.
+          <section className="panel p-5" aria-labelledby="avisos-senal">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 id="avisos-senal" className="text-xl">Avisos de señal</h2>
+                <p className="mt-1 text-sm text-ink-2">Te avisamos cuando la señal de un activo cambie, por ejemplo de «Neutral» a «Favorable».</p>
+              </div>
+              <Switch id="switch-senal" on={signalNotify} onChange={setSignalNotify} label="Avisarme cuando cambie una señal" />
             </div>
+            {!signalsReady && <p className="mt-2 text-xs text-ink-2">Calculando señales…</p>}
+          </section>
+        </div>
+
+        <section aria-labelledby="alertas-activas">
+          <SectionHead id="alertas-activas" title={`Alertas activas (${active.length})`} />
+          <h3 ref={listRef} tabIndex={-1} className="sr-only outline-none">Lista de alertas</h3>
+          {active.length === 0 ? (
+            <EmptyState
+              icon={BellOff}
+              title="Aún no tienes alertas"
+              description="Crea la primera con el formulario: por ejemplo, que te avisemos si Bitcoin baja un 10 %."
+            />
           ) : (
-            <ul className="mt-4 divide-y divide-white/[0.05]">
+            <ul className="divide-y divide-line border-y border-line">
               {active.map((a) => {
-                const c = coins.find((x) => x.id === a.coinId);
+                const live = assets.find((x) => x.id === a.assetId);
+                const def = defOf(a.assetId);
+                const away = live ? (a.price / live.price - 1) * 100 : null;
+                const closeness = away == null ? 0 : Math.max(0, Math.min(1, 1 - Math.abs(away) / 10));
                 return (
-                  <li key={a.id} className="flex items-center gap-3 py-3">
-                    {c && <img src={c.image} alt="" className="h-8 w-8 rounded-full" />}
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-white">
-                        {a.coinName} {a.direction === 'above' ? 'sube a' : 'baja a'} {usd(a.price)}
+                  <li key={a.id} className={`flex items-center gap-3 py-4 ${a.createdAt > mounted.current ? 'animate-fade-up' : ''}`}>
+                    <AssetMark asset={live ?? def ?? { symbol: a.assetName, kind: 'cripto' }} />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-ink">
+                        {a.assetName} {a.direction === 'above' ? 'sube a' : 'baja a'} <span className="num">{def ? fmtPrice(def, a.price) : a.price}</span>
                       </p>
-                      <p className="text-xs text-slate-500">Ahora: {usd(c?.current_price)}</p>
+                      <p className="text-xs text-ink-2">
+                        Ahora: {live ? <Price value={live.price} asset={live} /> : '—'}
+                        {away != null && <> · Faltan <span className="num">{Math.abs(away).toFixed(1)}%</span></>}
+                      </p>
+                      <div className="mt-2 h-1 bg-paper-3" aria-hidden>
+                        <div className="h-full bg-ink transition-[width] duration-500" style={{ width: `${closeness * 100}%` }} />
+                      </div>
                     </div>
-                    <button onClick={() => removeAlert(a.id)} className="btn btn-ghost px-3 py-2" aria-label={`Eliminar alerta de ${a.coinName}`}>
-                      <Trash className="h-4 w-4" aria-hidden />
+                    <button
+                      onClick={() => {
+                        removeAlert(a.id);
+                        toast({ title: 'Alerta eliminada', body: a.assetName, action: { label: 'Deshacer', onClick: () => restoreAlert(a) } });
+                        focusList();
+                      }}
+                      className="btn btn-ghost btn-sm btn-icon pointer-coarse:size-11"
+                      aria-label={`Eliminar alerta de ${a.assetName} a ${def ? fmtPrice(def, a.price) : a.price}`}
+                    >
+                      <Trash2 className="size-4" aria-hidden />
                     </button>
                   </li>
                 );
@@ -140,27 +267,36 @@ export default function Alerts() {
 
           {done.length > 0 && (
             <>
-              <h3 className="mt-6 text-sm font-semibold text-slate-400">Historial</h3>
-              <ul className="mt-2 divide-y divide-white/[0.05]">
-                {done.map((a) => (
-                  <li key={a.id} className="flex items-center gap-3 py-3 text-sm">
-                    <CircleCheck className="h-4 w-4 text-emerald-400" aria-hidden />
-                    <span className="flex-1 text-slate-300">
-                      {a.coinName} {a.direction === 'above' ? 'superó' : 'bajó de'} {usd(a.price)}
-                      <span className="block text-xs text-slate-500">{new Date(a.triggeredAt!).toLocaleString('es-419')}</span>
-                    </span>
-                    <button onClick={() => removeAlert(a.id)} className="text-xs text-slate-500 hover:text-white">
-                      Borrar
-                    </button>
-                  </li>
-                ))}
+              <h3 className="kicker mt-8">Historial</h3>
+              <ul className="mt-2 divide-y divide-line border-y border-line">
+                {done.map((a) => {
+                  const def = defOf(a.assetId);
+                  const text = `${a.assetName} ${a.direction === 'above' ? 'superó' : 'bajó de'} ${def ? fmtPrice(def, a.price) : a.price}`;
+                  return (
+                    <li key={a.id} className="flex items-center gap-3 py-3 text-sm">
+                      <CircleCheck className="size-4 shrink-0 text-up" aria-hidden />
+                      <span className="flex-1 text-ink-2">
+                        <span className="num">{text}</span>
+                        <span className="block text-xs">{new Date(a.triggeredAt!).toLocaleString('es-419')}</span>
+                      </span>
+                      <button
+                        onClick={() => {
+                          removeAlert(a.id);
+                          focusList();
+                        }}
+                        className="btn btn-ghost btn-sm btn-icon pointer-coarse:size-11"
+                        aria-label={`Borrar del historial: ${text}`}
+                      >
+                        <Trash2 className="size-4" aria-hidden />
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
             </>
           )}
         </section>
       </div>
-
-      <p className="text-xs text-slate-500">Las alertas funcionan mientras Funda esté abierto en alguna pestaña de tu navegador.</p>
     </div>
   );
 }

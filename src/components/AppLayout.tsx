@@ -1,20 +1,23 @@
 import { Suspense, useEffect, useRef, useState, type CSSProperties } from 'react';
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Bell, BookOpen, LayoutDashboard, LogOut, RefreshCw, Sparkles, Wallet } from 'lucide-react';
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Bell, BookOpen, Calculator, ChartLine, LogOut, RefreshCw, Sparkles, Store } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { STALE_MS, useMarket, useNow } from '../lib/market-context';
 import { AlertsProvider } from '../lib/alerts';
 import { markStep } from '../lib/onboarding';
 import { timeAgo } from '../lib/format';
-import { Disclaimer, Logo, Skeleton } from './ui';
 import ErrorBoundary from './ErrorBoundary';
+import MarketTape from './MarketTape';
+import ThemeToggle from './ThemeToggle';
+import { Disclaimer, Logo, Skeleton } from './ui';
 
 const NAV = [
-  { to: '/app', label: 'Panel', icon: LayoutDashboard, end: true },
+  { to: '/app', label: 'Mercados', icon: ChartLine, end: true },
   { to: '/app/alertas', label: 'Alertas', icon: Bell },
+  { to: '/app/herramientas', label: 'Herramientas', icon: Calculator },
+  { to: '/app/aprende', label: 'Aprende', icon: BookOpen },
   { to: '/app/asistente', label: 'Funda IA', icon: Sparkles },
-  { to: '/app/aprende', label: 'Academia', icon: BookOpen },
-  { to: '/app/billeteras', label: 'Billeteras', icon: Wallet },
+  { to: '/app/plataformas', label: 'Plataformas', icon: Store, desktopOnly: true },
 ];
 
 function MarketStatus() {
@@ -22,23 +25,24 @@ function MarketStatus() {
   const now = useNow();
   const stale = updatedAt != null && now - updatedAt > STALE_MS;
   const offline = !!error && !updatedAt;
-  const text = offline
+  const long = offline
     ? 'Sin conexión con el mercado'
     : stale
-      ? `Datos de ${timeAgo(updatedAt!)} · sin conexión con el mercado`
+      ? `Datos de ${timeAgo(updatedAt!)} · sin conexión`
       : updatedAt
-        ? `Precios en vivo · ${refreshing ? 'actualizando…' : `actualizado ${timeAgo(updatedAt)}`}`
-        : 'Conectando con el mercado…';
+        ? `En vivo · ${refreshing ? 'actualizando…' : timeAgo(updatedAt)}`
+        : 'Conectando…';
+  const short = offline ? 'Sin conexión' : stale ? timeAgo(updatedAt!) : updatedAt ? 'En vivo' : 'Conectando…';
   const warn = offline || stale;
   return (
-    <p className="flex min-w-0 items-center gap-2 text-xs text-slate-400" role={warn ? 'alert' : 'status'}>
-      {/* Pings once per refresh instead of pulsing forever */}
+    <p className="num flex shrink-0 items-center gap-2 text-xs" role={warn ? 'alert' : 'status'}>
+      {/* Hace un solo "ping" por actualización en vez de parpadear para siempre */}
       <span key={updatedAt ?? 0} className="relative flex size-2 shrink-0">
-        {!warn && updatedAt && <span className="absolute inset-0 animate-ping rounded-full bg-emerald-400 [animation-iteration-count:1]" />}
-        <span className={`relative size-2 rounded-full ${warn ? 'bg-amber-300' : updatedAt ? 'bg-emerald-400' : 'bg-slate-500'}`} />
+        {!warn && updatedAt && <span className="absolute inset-0 animate-ping rounded-full bg-up-inv [animation-iteration-count:1]" />}
+        <span className={`relative size-2 rounded-full ${warn ? 'bg-mark' : updatedAt ? 'bg-up-inv' : 'bg-on-ink/50'}`} />
       </span>
-      <span className="hidden truncate sm:inline">{text}</span>
-      <span className="truncate sm:hidden">{offline ? 'Sin conexión' : stale ? `Datos de ${timeAgo(updatedAt!)}` : updatedAt ? 'En vivo' : 'Conectando…'}</span>
+      <span className="hidden sm:inline">{long}</span>
+      <span className="sm:hidden">{short}</span>
     </p>
   );
 }
@@ -52,7 +56,7 @@ function RefreshButton() {
     setSpinning(true);
     setDone(false);
     await refresh(true);
-    // A minimum spin reads as completed work rather than a glitch
+    // Un giro mínimo se lee como trabajo hecho y no como un fallo
     setTimeout(() => {
       setSpinning(false);
       setDone(true);
@@ -72,20 +76,22 @@ function RefreshButton() {
 
 export default function AppLayout() {
   const { user, demo, signOut } = useAuth();
+  const { assets } = useMarket();
   const navigate = useNavigate();
-  const { pathname, search } = useLocation();
+  const { pathname } = useLocation();
   const mainRef = useRef<HTMLElement>(null);
   const menuRef = useRef<HTMLDetailsElement>(null);
   const firstRender = useRef(true);
   const u = user!;
   const initials = u.name.trim().slice(0, 2).toUpperCase() || '?';
+  const today = new Date().toLocaleDateString('es-419', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
   const logout = async () => {
     await signOut();
     navigate('/');
   };
 
-  // New page: start at the top, move focus to the content for keyboard/screen-reader users, close menus
+  // Página nueva: arranca arriba, enfoca el contenido (teclado y lectores de pantalla) y cierra el menú
   useEffect(() => {
     if (menuRef.current) menuRef.current.open = false;
     if (firstRender.current) {
@@ -96,13 +102,13 @@ export default function AppLayout() {
     mainRef.current?.focus({ preventScroll: true });
   }, [pathname]);
 
-  // First-steps progress for the Dashboard checklist
+  // Avance de los primeros pasos del panel
   useEffect(() => {
-    if (pathname.startsWith('/app/cripto/')) markStep(u.uid, 'coin');
-    if (pathname === '/app/aprende' && new URLSearchParams(search).get('tab') === 'guias') markStep(u.uid, 'guide');
-  }, [pathname, search, u.uid]);
+    if (pathname.startsWith('/app/mercado/')) markStep(u.uid, 'asset');
+    if (pathname === '/app/herramientas') markStep(u.uid, 'tool');
+  }, [pathname, u.uid]);
 
-  // Close the account menu on outside click
+  // Cerrar el menú de cuenta al hacer clic fuera
   useEffect(() => {
     const onDown = (e: PointerEvent) => {
       const m = menuRef.current;
@@ -112,15 +118,16 @@ export default function AppLayout() {
     return () => document.removeEventListener('pointerdown', onDown);
   }, []);
 
-  // Warm up the other pages when idle so navigation never shows a loading flash (not on Save-Data / 2G)
+  // Precarga las demás páginas en reposo para que navegar no muestre un parpadeo (no con Save-Data ni 2G)
   useEffect(() => {
     const c = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
     if (c?.saveData || /2g/.test(c?.effectiveType ?? '')) return;
     const warm = () => {
       import('../pages/Dashboard');
-      import('../pages/CoinDetail');
+      import('../pages/AssetDetail');
       import('../components/PriceChart');
       import('../pages/Alerts');
+      import('../pages/Tools');
       import('../pages/Assistant');
       import('../pages/Learn');
       import('../pages/Platforms');
@@ -133,104 +140,85 @@ export default function AppLayout() {
     return () => clearTimeout(t);
   }, []);
 
-  const avatar = u.photoURL ? (
-    <img src={u.photoURL} alt="" className="size-9 rounded-full" referrerPolicy="no-referrer" />
-  ) : (
-    <span className="grid size-9 place-items-center rounded-full bg-emerald-400/15 text-sm font-bold text-emerald-200 ring-1 ring-emerald-400/30">{initials}</span>
-  );
-
   return (
     <AlertsProvider uid={u.uid}>
       <button
         type="button"
         onClick={() => mainRef.current?.focus()}
-        className="btn btn-primary sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50"
+        className="btn btn-primary sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[60]"
       >
         Saltar al contenido
       </button>
-      <div className="min-h-dvh lg:pl-64">
-        {/* Sidebar (desktop) */}
-        <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-white/[0.06] bg-surface/60 p-5 lg:flex">
-          <Logo to="/app" />
-          <nav className="mt-10 flex flex-col gap-1" aria-label="Principal">
-            {NAV.map(({ to, label, icon: Icon, end }) => (
-              <NavLink
-                key={to}
-                to={to}
-                end={end}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-[background-color,color,transform] active:scale-[0.98] ${
-                    isActive ? 'bg-emerald-400/10 text-emerald-200 ring-1 ring-emerald-400/15' : 'text-slate-400 hover:bg-white/[0.04] hover:text-white'
-                  }`
-                }
-              >
-                <Icon className="h-5 w-5" aria-hidden />
-                {label}
-              </NavLink>
-            ))}
-          </nav>
-          <div className="card mt-auto p-4">
-            <div className="flex items-center gap-3">
-              {avatar}
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-white">{u.name}</p>
-                <p className="truncate text-xs text-slate-400">{u.email}</p>
-              </div>
-            </div>
-            {demo && (
-              <p className="mt-3 text-xs text-amber-200/90" title="Tus datos se guardan solo en este navegador">
-                Versión de prueba: tus datos se guardan solo en este navegador.
-              </p>
-            )}
-            <button className="btn btn-ghost btn-sm mt-3 w-full" onClick={logout}>
-              <LogOut className="h-4 w-4" aria-hidden /> Cerrar sesión
-            </button>
-          </div>
-        </aside>
-
-        {/* Top bar */}
-        <header className="glass sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-white/[0.06] px-4 py-2.5 sm:px-8 [@media(max-height:30rem)]:static">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="lg:hidden">
-              <Logo to="/app" />
-            </div>
+      <div className="min-h-dvh">
+        {/* Cinta de precios + estado */}
+        <div className="bg-ink text-on-ink">
+          <div className="mx-auto flex h-9 max-w-6xl items-center gap-5 px-4 sm:px-8">
+            <MarketTape assets={assets} className="min-w-0 flex-1" />
             <MarketStatus />
           </div>
+        </div>
+
+        {/* Cabecera del diario */}
+        <div className="mx-auto flex max-w-6xl items-end justify-between gap-4 px-4 pt-4 pb-3 sm:px-8">
+          <div className="min-w-0">
+            <Logo size="lg" to="/app" />
+            <p className="kicker mt-1.5 hidden first-letter:uppercase sm:block">{today}</p>
+          </div>
           <div className="flex shrink-0 items-center gap-2">
-            {demo && (
-              <span className="chip hidden border-amber-300/30 text-amber-200 sm:inline-flex" title="Tus datos se guardan solo en este navegador">
-                Versión de prueba
-              </span>
-            )}
             <RefreshButton />
-            {/* Account menu (mobile) */}
-            <details ref={menuRef} className="relative lg:hidden">
-              <summary className="grid size-11 cursor-pointer place-items-center rounded-full" aria-label="Tu cuenta">
-                {avatar}
+            <details ref={menuRef} className="relative">
+              <summary className="grid size-11 cursor-pointer place-items-center rounded-[5px] border border-ink bg-paper font-mono text-sm font-semibold text-ink transition-colors hover:bg-paper-3" aria-label="Tu cuenta">
+                {u.photoURL ? <img src={u.photoURL} alt="" className="size-full rounded-[4px] object-cover" referrerPolicy="no-referrer" /> : initials}
               </summary>
-              <div className="card absolute right-0 mt-2 w-64 animate-fade-up p-3 shadow-2xl shadow-black/60" style={{ '--rise': '-4px' } as CSSProperties}>
-                <p className="truncate px-1 text-sm font-semibold text-white">{u.name}</p>
-                <p className="truncate px-1 text-xs text-slate-400">{u.email}</p>
-                {demo && <p className="mt-2 px-1 text-xs text-amber-200/90">Versión de prueba: tus datos se guardan solo en este navegador.</p>}
-                <button className="btn btn-ghost mt-3 w-full text-rose-200" onClick={logout}>
-                  <LogOut className="h-4 w-4" aria-hidden /> Cerrar sesión
-                </button>
+              <div className="panel-hard absolute right-0 z-40 mt-2 w-72 animate-fade-up p-4 shadow-[4px_4px_0_0_var(--ink)]" style={{ '--rise': '-4px' } as CSSProperties}>
+                <p className="truncate font-display text-lg font-semibold text-ink">{u.name}</p>
+                <p className="truncate text-sm text-ink-2">{u.email}</p>
+                {demo && <p className="mt-2 text-xs text-warn">Versión de prueba: tus datos se guardan solo en este navegador.</p>}
+                <div className="hairline mt-3 grid gap-2 pt-3">
+                  <Link to="/app/plataformas" className="btn btn-ghost btn-sm justify-start">
+                    <Store className="size-4" aria-hidden /> Plataformas
+                  </Link>
+                  <ThemeToggle showLabel className="justify-start" />
+                  <button className="btn btn-ghost btn-sm justify-start" onClick={logout}>
+                    <LogOut className="size-4" aria-hidden /> Cerrar sesión
+                  </button>
+                </div>
               </div>
             </details>
           </div>
-        </header>
+        </div>
+
+        {/* Secciones (escritorio) */}
+        <nav className="sticky top-0 z-30 hidden border-y border-ink bg-paper/95 backdrop-blur lg:block" aria-label="Principal">
+          <ul className="mx-auto flex max-w-6xl gap-1 px-8">
+            {NAV.map(({ to, label, end }) => (
+              <li key={to}>
+                <NavLink
+                  to={to}
+                  end={end}
+                  className={({ isActive }) =>
+                    `-mb-px block border-b-[3px] px-3 py-3 text-sm font-semibold transition-colors ${isActive ? 'border-ink text-ink' : 'border-transparent text-ink-2 hover:text-ink'}`
+                  }
+                >
+                  {label}
+                </NavLink>
+              </li>
+            ))}
+          </ul>
+        </nav>
+        <div className="border-b border-ink lg:hidden" />
 
         <main
           id="contenido"
           ref={mainRef}
           tabIndex={-1}
-          className="mx-auto max-w-6xl px-4 pt-6 pb-[calc(7rem+env(safe-area-inset-bottom))] outline-none sm:px-8 lg:pt-8 lg:pb-12"
+          className="mx-auto max-w-6xl px-4 pt-6 pb-[calc(7rem+env(safe-area-inset-bottom))] outline-none sm:px-8 lg:pb-14"
         >
           <Suspense
             fallback={
               <div className="animate-fade-in space-y-8 [animation-delay:400ms]" role="status">
                 <span className="sr-only">Cargando…</span>
-                <Skeleton className="h-9 w-56" />
+                <Skeleton className="h-12 w-72" />
                 <Skeleton className="h-64" />
               </div>
             }
@@ -241,30 +229,27 @@ export default function AppLayout() {
               </div>
             </ErrorBoundary>
           </Suspense>
-          <Disclaimer className="mt-16 border-t border-white/[0.06] pt-6" />
+          <Disclaimer className="hairline mt-16 pt-6" />
         </main>
 
-        {/* Bottom nav (mobile) */}
+        {/* Navegación inferior (móvil) */}
         <nav
-          className="glass fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-white/[0.06] pb-[env(safe-area-inset-bottom)] lg:hidden [@media(max-height:30rem)]:static"
+          className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-ink bg-paper pb-[env(safe-area-inset-bottom)] lg:hidden [@media(max-height:30rem)]:static"
           aria-label="Principal"
         >
-          {NAV.map(({ to, label, icon: Icon, end }) => (
+          {NAV.filter((n) => !n.desktopOnly).map(({ to, label, icon: Icon, end }) => (
             <NavLink
               key={to}
               to={to}
               end={end}
-              className={({ isActive }) => `group flex flex-col items-center gap-1 py-2 text-xs font-medium transition-colors ${isActive ? 'text-emerald-200' : 'text-slate-400'}`}
+              className={({ isActive }) =>
+                `relative flex flex-col items-center gap-1 pt-2.5 pb-2 text-[11px] font-semibold transition-colors ${isActive ? 'text-ink' : 'text-ink-2'}`
+              }
             >
               {({ isActive }) => (
                 <>
-                  <span
-                    className={`grid h-7 w-12 place-items-center rounded-full transition-[background-color,transform] duration-200 group-active:scale-90 ${
-                      isActive ? 'bg-emerald-400/15' : ''
-                    }`}
-                  >
-                    <Icon className="h-5 w-5" aria-hidden />
-                  </span>
+                  <span aria-hidden className={`absolute inset-x-3 top-0 h-[3px] transition-colors ${isActive ? 'bg-ink' : 'bg-transparent'}`} />
+                  <Icon className="size-5" aria-hidden />
                   {label}
                 </>
               )}

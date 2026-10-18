@@ -1,14 +1,14 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import { STALE_MS, useMarket } from './market-context';
+import { isStale, useMarket } from './market-context';
+import { fmtPrice } from './assets';
 import { SIGNAL_META, type SignalLevel } from './indicators';
-import { usd } from './format';
 import { store } from './storage';
 import Toaster, { type ToastItem } from '../components/Toaster';
 
 export interface PriceAlert {
   id: string;
-  coinId: string;
-  coinName: string;
+  assetId: string;
+  assetName: string;
   direction: 'above' | 'below';
   price: number;
   createdAt: number;
@@ -32,14 +32,21 @@ interface AlertsCtx {
 const Ctx = createContext<AlertsCtx | null>(null);
 const icon = `${import.meta.env.BASE_URL}favicon.svg`;
 
-const isAlert = (a: unknown): a is PriceAlert =>
-  !!a && typeof (a as PriceAlert).id === 'string' && typeof (a as PriceAlert).coinId === 'string' && Number.isFinite((a as PriceAlert).price);
+/** Acepta alertas guardadas con el formato anterior (coinId / coinName). */
+function normalize(a: unknown): PriceAlert | null {
+  const r = a as Record<string, unknown> | null;
+  if (!r || typeof r.id !== 'string' || !Number.isFinite(r.price)) return null;
+  const assetId = (r.assetId ?? r.coinId) as string | undefined;
+  if (typeof assetId !== 'string') return null;
+  return { ...(r as unknown as PriceAlert), assetId, assetName: String(r.assetName ?? r.coinName ?? assetId) };
+}
+const load = (raw: unknown): PriceAlert[] => (Array.isArray(raw) ? raw.flatMap((a) => normalize(a) ?? []) : []);
 
-// shortcut: alerts are checked only while a tab is open and stored per browser; move to FCM + Cloud Functions for real push.
+// shortcut: las alertas se revisan solo con una pestaña abierta y se guardan por navegador; para push real: FCM + Cloud Functions.
 export function AlertsProvider({ uid, children }: { uid: string; children: ReactNode }) {
-  const { coins, signals, updatedAt } = useMarket();
+  const { assets, signals, status } = useMarket();
   const keys = { alerts: `funda:alerts:${uid}`, notify: `funda:signal-notify:${uid}`, last: `funda:last-signals:${uid}` };
-  const [alerts, setAlerts] = useState<PriceAlert[]>(() => store.get<unknown[]>(keys.alerts, []).filter(isAlert));
+  const [alerts, setAlerts] = useState<PriceAlert[]>(() => load(store.get<unknown>(keys.alerts, [])));
   const [signalNotify, setSignalNotifyState] = useState<boolean>(() => store.get(keys.notify, true));
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [permission, setPermission] = useState<AlertsCtx['permission']>(
@@ -48,7 +55,7 @@ export function AlertsProvider({ uid, children }: { uid: string; children: React
   const toastId = useRef(0);
   const skipSave = useRef(false);
 
-  // Persist, and stay in sync with other open tabs (each tab would otherwise overwrite the others' alerts)
+  // Guardar, y mantenerse sincronizado con otras pestañas (cada una sobrescribiría las alertas de las demás)
   useEffect(() => {
     if (skipSave.current) {
       skipSave.current = false;
@@ -61,7 +68,7 @@ export function AlertsProvider({ uid, children }: { uid: string; children: React
       if (e.key !== keys.alerts || !e.newValue) return;
       try {
         skipSave.current = true;
-        setAlerts((JSON.parse(e.newValue) as unknown[]).filter(isAlert));
+        setAlerts(load(JSON.parse(e.newValue)));
       } catch {
         skipSave.current = false;
       }
@@ -85,45 +92,44 @@ export function AlertsProvider({ uid, children }: { uid: string; children: React
     toast(t);
     if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
       try {
-        // tag: the OS shows one notification even if several tabs fire it
+        // tag: el sistema muestra una sola notificación aunque varias pestañas la disparen
         new Notification(t.title, { body: t.body, icon, tag });
       } catch {
-        /* some mobile browsers only allow notifications from a service worker */
+        /* algunos navegadores móviles solo permiten notificaciones desde un service worker */
       }
     }
   };
 
-  // Price alerts (never on stale data: an old cached price must not trigger an alert)
+  // Alertas de precio (nunca con datos viejos: un precio guardado no debe disparar una alerta)
   const alertsRef = useRef(alerts);
   alertsRef.current = alerts;
   const notified = useRef(new Set<string>());
   useEffect(() => {
-    if (!coins.length || !updatedAt || Date.now() - updatedAt > STALE_MS) return;
-    const priceOf = (id: string) => coins.find((c) => c.id === id)?.current_price;
-    const fired = alertsRef.current.filter((a) => {
-      const price = priceOf(a.coinId);
-      if (a.triggeredAt || price == null || notified.current.has(a.id)) return false;
-      return a.direction === 'above' ? price >= a.price : price <= a.price;
+    const now = Date.now();
+    const fired = alertsRef.current.flatMap((a) => {
+      const asset = assets.find((x) => x.id === a.assetId);
+      if (!asset || a.triggeredAt || notified.current.has(a.id) || isStale(asset.kind, status[asset.kind], now)) return [];
+      const hit = a.direction === 'above' ? asset.price >= a.price : asset.price <= a.price;
+      return hit ? [{ a, asset }] : [];
     });
     if (!fired.length) return;
-    const now = Date.now();
-    const ids = new Set(fired.map((a) => a.id));
+    const ids = new Set(fired.map((f) => f.a.id));
     setAlerts((list) => list.map((a) => (ids.has(a.id) && !a.triggeredAt ? { ...a, triggeredAt: now } : a)));
-    fired.forEach((a) => {
+    fired.forEach(({ a, asset }) => {
       notified.current.add(a.id);
       notify(
         {
           tone: 'alert',
           persist: true,
-          title: `${a.coinName} ${a.direction === 'above' ? 'superó' : 'bajó de'} ${usd(a.price)}`,
-          body: `Precio actual: ${usd(priceOf(a.coinId))}`,
+          title: `${a.assetName} ${a.direction === 'above' ? 'superó' : 'bajó de'} ${fmtPrice(asset, a.price)}`,
+          body: `Valor actual: ${fmtPrice(asset, asset.price)}`,
         },
         `alert-${a.id}`,
       );
     });
-  }, [coins]);
+  }, [assets]);
 
-  // Signal changes
+  // Cambios de señal
   useEffect(() => {
     if (!Object.keys(signals).length) return;
     const last = store.get<Record<string, SignalLevel>>(keys.last, {});
@@ -131,11 +137,8 @@ export function AlertsProvider({ uid, children }: { uid: string; children: React
     if (signalNotify) {
       for (const [id, level] of Object.entries(current)) {
         if (last[id] && last[id] !== level && SIGNAL_META[last[id]]) {
-          const name = coins.find((c) => c.id === id)?.name ?? id;
-          notify(
-            { tone: 'signal', title: `Cambió la señal de ${name}`, body: `${SIGNAL_META[last[id]].short} → ${SIGNAL_META[level].short}` },
-            `signal-${id}`,
-          );
+          const name = assets.find((c) => c.id === id)?.name ?? id;
+          notify({ tone: 'signal', title: `Cambió la señal de ${name}`, body: `${SIGNAL_META[last[id]].short} → ${SIGNAL_META[level].short}` }, `signal-${id}`);
         }
       }
     }

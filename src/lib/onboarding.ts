@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 
-export type OnboardingStep = 'coin' | 'ai' | 'guide' | 'alert';
-export const ONBOARDING_STEPS: OnboardingStep[] = ['coin', 'ai', 'guide', 'alert'];
+export type OnboardingStep = 'asset' | 'tool' | 'ai' | 'alert';
+export const ONBOARDING_STEPS: OnboardingStep[] = ['asset', 'tool', 'ai', 'alert'];
 
 interface State {
   done: Partial<Record<OnboardingStep, true>>;

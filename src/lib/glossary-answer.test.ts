@@ -28,6 +28,20 @@ describe('glossaryAnswer', () => {
     expect(glossaryAnswer('¿Qué son los tokens?')).toMatch(/^\*\*Token\*\*/);
   });
 
+  it('covers general investing, not only crypto', () => {
+    expect(glossaryAnswer('¿Qué es un ETF?')).toMatch(/^\*\*ETF\*\*/);
+    expect(glossaryAnswer('¿Qué son los bonos?')).toMatch(/^\*\*Bono\*\*/);
+    expect(glossaryAnswer('qué es la inflación')).toMatch(/^\*\*Inflación\*\*/);
+    expect(glossaryAnswer('explícame el S&P 500')).toMatch(/^\*\*S&P 500 \(SPY\)\*\*/);
+    expect(glossaryAnswer('¿Qué es el euro?')).toMatch(/^\*\*Euro \(EUR\)\*\*/);
+  });
+
+  it('explains both terms when asked for a difference', () => {
+    const a = glossaryAnswer('¿Qué es un ETF y en qué se diferencia de una acción?');
+    expect(a).toMatch(/^\*\*ETF\*\*/);
+    expect(a).toMatch(/\*\*Acción\*\*/);
+  });
+
   it('falls back politely for unknown terms', () => {
     expect(glossaryAnswer('receta de pizza')).toMatch(/glosario/);
   });

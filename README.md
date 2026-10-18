@@ -1,22 +1,22 @@
-# Funda · Guía de inversiones y cripto
+# Funda · Aprende a invertir
 
-App web para aprender a invertir en criptomonedas con información, no con intuición.
+App web para aprender a invertir con información, no con intuición: **bolsa y ETFs, divisas y criptomonedas** en un solo lugar, con señales explicadas, alertas, herramientas de cálculo y un tutor con IA. Pensada para principiantes de Latinoamérica (precios en dólares).
 
 ## Qué incluye
 
 | Sección | Qué hace |
 |---|---|
-| **Landing** | Página de presentación con precios en vivo, funciones, cómo funciona, preguntas frecuentes y llamados a registrarse. |
-| **Login / Registro** | Correo y contraseña + Google, con recuperación de contraseña (Firebase). Sin Firebase funciona en *modo demo*. |
-| **Panel** | Las 5 criptos principales (BTC, ETH, XRP, BNB, SOL) con precio, mini-gráfica, señal y tabla de estadísticas. Resumen del mercado generado con IA. |
-| **Detalle de cada cripto** | Gráfica de 24 h / 7 d / 30 d / 90 d / 1 año, estadísticas, señal explicada y ficha educativa. |
-| **Señales automáticas** | RSI, medias móviles de 20 y 50 días y volatilidad, combinadas en *Momento favorable / Neutral / Precaución*. |
-| **Alertas** | Avisos de precio y de cambio de señal: aparecen dentro de la app y como notificación del navegador. |
-| **Asistente IA (Gemini)** | Chatbot que explica términos complicados y conoce los precios y señales del momento. Sin API key responde con el glosario. |
-| **Academia** | Fichas de 6 criptos, glosario de +45 términos con buscador (blockchain, tokenizar, staking, DCA, etc.) y guías paso a paso. |
-| **Billeteras y exchanges** | Enlaces oficiales a Binance, Coinbase, Kraken, Bitso, OKX, Bybit, MetaMask, Trust Wallet, Phantom, Exodus, Ledger y Trezor. |
+| **Landing** | Portada con la tabla del día, calculadora de interés compuesto en vivo, glosario interactivo, confianza y preguntas frecuentes. |
+| **Login / Registro** | Correo y contraseña + Google, con recuperación de contraseña (Firebase). Sin Firebase funciona en *versión de prueba*. |
+| **Mercados** | Resumen del día (con IA o automático), termómetro de señales y tabla de todos los activos por tipo: cripto (BTC, ETH, XRP, BNB, SOL), divisas (EUR, MXN, BRL, GBP, JPY) y bolsa/ETFs (S&P 500, Nasdaq 100, bonos del Tesoro, oro). |
+| **Detalle de activo** | Gráfica por periodo, datos clave, ficha educativa y señal (RSI, medias de 20 y 50 días, volatilidad) explicada en palabras simples. Las divisas se muestran sin señal. |
+| **Alertas** | Avisos de precio y de cambio de señal para cualquier activo, dentro de la app y como notificación del navegador. |
+| **Herramientas** | Interés compuesto (con inflación), simulador de compras periódicas (DCA) con precios reales y test de perfil de inversionista. |
+| **Funda IA** (Gemini) | Tutor de inversión en general. Sin clave responde desde el glosario y las fichas, y nunca recomienda comprar o vender. |
+| **Aprende** | Ruta de 5 guías para empezar, guías de seguridad y cripto, fichas de cada instrumento y glosario de +70 términos. |
+| **Plataformas** | Enlaces oficiales a brokers, exchanges y billeteras, con avisos de disponibilidad por país. |
 
-Todo se actualiza solo: los precios cada 60 s, las señales al cambiar el precio y las alertas en cada actualización.
+Diseño: un "diario del inversionista" en papel (tema claro, oscuro o automático), serif de titular, números en monoespaciada y filetes finos en lugar de tarjetas. Respeta `prefers-reduced-motion` y cumple contraste AA.
 
 ## Correr en tu computadora
 
@@ -28,45 +28,50 @@ cp .env.example .env.local   # y completa las claves (opcional)
 npm run dev                  # abre http://localhost:3000
 ```
 
-Otros comandos: `npm run build` (versión de producción), `npm test` (pruebas), `npm run typecheck`.
+Otros comandos: `npm run build`, `npm test`, `npm run typecheck`.
 
-### Claves (opcionales)
+### Claves (todas opcionales)
 
-- **Gemini**: crea una clave en <https://aistudio.google.com/apikey> y ponla en `GEMINI_API_KEY`.
-- **Firebase Auth**: en <https://console.firebase.google.com> crea un proyecto, activa *Authentication → Correo/contraseña* y *Google*, registra una app web y copia los valores en las variables `VITE_FIREBASE_*`. Agrega tu dominio en *Authentication → Settings → Authorized domains*.
+- **Gemini**: <https://aistudio.google.com/apikey> → `GEMINI_API_KEY`.
+- **Firebase Auth**: crea un proyecto en <https://console.firebase.google.com>, activa *Correo/contraseña* y *Google*, registra una app web y copia los valores en `VITE_FIREBASE_*`. Agrega tu dominio en *Authentication → Settings → Authorized domains*.
+- **Bolsa y ETFs**: clave gratuita de <https://twelvedata.com> → `VITE_TWELVEDATA_KEY`. Sin ella esa sección queda desactivada.
+- **Dominio público**: `VITE_SITE_URL` (por ejemplo `https://funda.app`) para que la imagen al compartir en WhatsApp/Facebook use una URL absoluta.
 
-- **Dominio público** (opcional): pon tu dominio en `VITE_SITE_URL` (por ejemplo `https://funda.app`) para que la imagen al compartir en WhatsApp o Facebook use una URL absoluta.
+Sin claves la app funciona igual: cripto y divisas no necesitan clave, el login queda en versión de prueba y el asistente responde con el glosario.
 
-Sin claves la app funciona igual: el login queda en *versión de prueba* y el asistente responde con el glosario.
+## Fuentes de datos
+
+| Datos | Fuente | Frecuencia |
+|---|---|---|
+| Cripto | CoinGecko (pública) | Cada minuto |
+| Divisas | Banco Central Europeo vía Frankfurter | Diaria (días hábiles) |
+| Bolsa y ETFs | Twelve Data (clave propia) | Cierre diario |
+
+Todo se guarda en caché local: la app muestra al instante los últimos datos, avisa cuando son viejos y no dispara alertas con datos desactualizados.
 
 ## Migrar a Google AI Studio
 
-El proyecto usa la misma base que generan las apps de AI Studio (Build): **React + TypeScript + Vite + `@google/genai`**, la clave en `GEMINI_API_KEY` y el archivo `metadata.json`. Para migrar:
+El proyecto usa la misma base que generan las apps de AI Studio (Build): **React + TypeScript + Vite + `@google/genai`**, la clave en `GEMINI_API_KEY` y `metadata.json`. Sube o pega los archivos respetando la estructura y usa **Deploy** de AI Studio (Cloud Run), que mantiene la clave del lado del servidor.
 
-1. Crea una app nueva en AI Studio (Build) y sube o pega los archivos de este repositorio respetando la estructura de carpetas.
-2. AI Studio inyecta tu clave de Gemini automáticamente, así que no hace falta `.env.local` ahí.
-3. Para publicar, usa **Deploy** de AI Studio (Cloud Run): mantiene la clave del lado del servidor.
-
-> ⚠️ **Importante:** si publicas `npm run build` en un hosting estático (Netlify, Vercel, GitHub Pages), la clave de Gemini queda visible en el código del navegador (el build lo advierte). Para publicar fuera de AI Studio, mueve las llamadas a Gemini a un backend (por ejemplo, una Cloud Function) o, como mínimo, restringe la clave en Google Cloud Console a tu dominio y a la API de Gemini, con un límite diario de uso.
+> ⚠️ Si publicas `npm run build` en un hosting estático (Netlify, Vercel, GitHub Pages), la clave de Gemini y la de Twelve Data quedan visibles en el navegador (el build lo advierte). Para publicar fuera de AI Studio, mueve esas llamadas a un backend o, como mínimo, restringe las claves a tu dominio y fija un límite diario de uso.
 
 ## Estructura
 
 ```
 src/
-  pages/        Landing, Login, Dashboard, CoinDetail, Alerts, Assistant, Learn, Platforms
-  components/   Layout de la app, gráfica de precios y piezas de interfaz
-  lib/          market (CoinGecko + caché), indicators (señales), alerts, ai (Gemini), auth (Firebase)
-  data/         Glosario, fichas de criptos, guías y plataformas (contenido editable)
+  pages/        Landing, Login, Dashboard (Mercados), AssetDetail, Alerts, Tools, Assistant, Learn, Platforms, Legal
+  components/   AppLayout, PublicChrome, MarketTape, PriceChart, ThemeToggle, Toaster, ui (sistema visual)
+  lib/          http (caché), market / fx / stocks (proveedores), assets (catálogo), indicators (señales),
+                calc (herramientas), alerts, ai, auth, glossary-answer
+  data/         Glosario, guías, fichas por activo y plataformas (contenido editable)
 ```
-
-Para cambiar textos educativos, términos o plataformas solo edita los archivos de `src/data/`.
 
 ## Limitaciones actuales
 
-- Las alertas solo se revisan mientras la app está abierta en alguna pestaña. Para notificaciones push con la app cerrada hace falta Firebase Cloud Messaging y un backend.
-- Las alertas y preferencias se guardan en el navegador, no en la nube.
-- Los precios vienen de la API pública gratuita de CoinGecko, que tiene un límite de consultas. La app guarda los datos en caché, muestra al instante los últimos precios guardados y avisa cuando los datos tienen más de 5 minutos.
-- Las páginas de Términos y Privacidad son un borrador: revísalas antes de lanzar y agrega un correo de contacto real.
+- Las alertas solo se revisan mientras la app está abierta y se guardan en el navegador. Para push con la app cerrada hace falta Firebase Cloud Messaging y un backend.
+- Los tipos de cambio y los precios de bolsa son de cierre diario, no en tiempo real.
+- Las páginas de Términos y Privacidad son un borrador: revísalas y agrega un correo de contacto real antes de lanzar.
+- Las integraciones con CoinGecko, Frankfurter y Twelve Data se probaron con respuestas simuladas, no contra las APIs reales.
 
 ---
 

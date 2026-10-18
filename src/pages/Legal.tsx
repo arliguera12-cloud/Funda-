@@ -19,7 +19,7 @@ const DOCS = {
         h: 'No es asesoría financiera',
         p: [
           'Nada de lo que ves en Funda es una recomendación de compra o venta. Las señales ("favorable", "neutral", "precaución") resumen indicadores técnicos del pasado y no predicen el futuro.',
-          'Las criptomonedas son muy volátiles: puedes perder parte o todo lo que inviertas. Antes de invertir, infórmate y considera consultar a un asesor autorizado en tu país.',
+          'Todas las inversiones pueden perder valor y las criptomonedas son especialmente volátiles: puedes perder parte o todo lo que inviertas. Antes de invertir, infórmate y considera consultar a un asesor autorizado en tu país.',
         ],
       },
       {
@@ -31,7 +31,7 @@ const DOCS = {
       {
         h: 'Datos e inteligencia artificial',
         p: [
-          'Los precios provienen de CoinGecko y pueden tener retrasos o errores. Las respuestas del asistente las genera Google Gemini y pueden contener imprecisiones: verifica la información importante.',
+          'Los precios provienen de CoinGecko (cripto), del Banco Central Europeo vía Frankfurter (divisas) y de Twelve Data (bolsa y ETFs), y pueden tener retrasos o errores. Los datos de divisas y bolsa son de cierre diario. Las respuestas del asistente las genera Google Gemini y pueden contener imprecisiones: verifica la información importante.',
         ],
       },
       {
@@ -59,7 +59,7 @@ const DOCS = {
       {
         h: 'Servicios externos',
         p: [
-          'Para mostrar precios consultamos la API pública de CoinGecko. Las preguntas que escribes al asistente se envían a Google Gemini para generar la respuesta: no escribas datos personales o sensibles en el chat.',
+          'Para mostrar precios consultamos las APIs de CoinGecko, Frankfurter y, si está activada, Twelve Data. Las preguntas que escribes al asistente se envían a Google Gemini para generar la respuesta: no escribas datos personales o sensibles en el chat.',
         ],
       },
       {
@@ -79,17 +79,22 @@ export default function Legal({ kind }: { kind: keyof typeof DOCS }) {
       <title>{`${doc.title} · ${APP_NAME}`}</title>
       <PublicHeader />
       <main id="contenido" className="mx-auto w-full max-w-3xl flex-1 px-4 py-12 sm:px-6 sm:py-16">
-        <Link to="/" className="inline-flex items-center gap-1 text-sm text-slate-400 hover:text-white">
+        <Link to="/" className="inline-flex min-h-11 items-center gap-1 text-sm font-medium text-ink-2 hover:text-ink">
           <ArrowLeft className="h-4 w-4" aria-hidden /> Inicio
         </Link>
-        <h1 className="mt-6 text-3xl font-bold sm:text-4xl">{doc.title}</h1>
-        <p className="mt-2 text-sm text-slate-400">Última actualización: {UPDATED}</p>
-        <div className="card mt-8 space-y-8 p-6 sm:p-10">
-          {doc.sections.map((s) => (
+        <header className="rule-double mt-4 pt-5 pb-6">
+          <p className="kicker">Legal · Actualizado el {UPDATED}</p>
+          <h1 className="mt-2 text-[clamp(2.2rem,6vw,3.5rem)] leading-[1.02]">{doc.title}</h1>
+        </header>
+        <div className="mt-6 space-y-9">
+          {doc.sections.map((s, i) => (
             <section key={s.h}>
-              <h2 className="text-lg font-semibold">{s.h}</h2>
+              <h2 className="text-2xl">
+                <span className="kicker mr-3 align-middle">{String(i + 1).padStart(2, '0')}</span>
+                {s.h}
+              </h2>
               {s.p.map((p) => (
-                <p key={p} className="mt-2 leading-relaxed text-slate-300">
+                <p key={p} className="mt-3 text-[17px] leading-relaxed text-ink-2">
                   {p}
                 </p>
               ))}

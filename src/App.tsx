@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect, type ReactNode } from 'react';
-import { HashRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { HashRouter, Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import { LoaderCircle } from 'lucide-react';
 import { AuthProvider, useAuth } from './lib/auth';
 import { MarketProvider } from './lib/market-context';
@@ -10,18 +10,25 @@ import Login from './pages/Login';
 
 // App pages load on demand so the landing stays light
 const Dashboard = lazy(() => import('./pages/Dashboard'));
-const CoinDetail = lazy(() => import('./pages/CoinDetail'));
+const AssetDetail = lazy(() => import('./pages/AssetDetail'));
+const Tools = lazy(() => import('./pages/Tools'));
 const Alerts = lazy(() => import('./pages/Alerts'));
 const Assistant = lazy(() => import('./pages/Assistant'));
 const Learn = lazy(() => import('./pages/Learn'));
 const Platforms = lazy(() => import('./pages/Platforms'));
 const Legal = lazy(() => import('./pages/Legal'));
 
+// Enlaces antiguos: /app/cripto/:id ahora es /app/mercado/:id
+function LegacyAsset() {
+  const { id } = useParams();
+  return <Navigate to={`/app/mercado/${id}`} replace />;
+}
+
 function FullScreenLoader() {
   return (
     <div className="grid min-h-dvh place-items-center" role="status">
-      <span className="flex items-center gap-3 text-sm text-slate-400">
-        <LoaderCircle className="size-5 animate-spin text-emerald-300" aria-hidden />
+      <span className="flex items-center gap-3 text-sm text-ink-2">
+        <LoaderCircle className="size-5 animate-spin text-ink" aria-hidden />
         Cargando…
       </span>
     </div>
@@ -81,11 +88,14 @@ export default function App() {
                 }
               >
                 <Route index element={<Dashboard />} />
-                <Route path="cripto/:id" element={<CoinDetail />} />
+                <Route path="mercado/:id" element={<AssetDetail />} />
+                <Route path="cripto/:id" element={<LegacyAsset />} />
                 <Route path="alertas" element={<Alerts />} />
+                <Route path="herramientas" element={<Tools />} />
                 <Route path="asistente" element={<Assistant />} />
                 <Route path="aprende" element={<Learn />} />
-                <Route path="billeteras" element={<Platforms />} />
+                <Route path="plataformas" element={<Platforms />} />
+                <Route path="billeteras" element={<Navigate to="/app/plataformas" replace />} />
               </Route>
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

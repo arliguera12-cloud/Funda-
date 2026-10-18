@@ -1,8 +1,9 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type ComponentType, type KeyboardEvent, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { CircleAlert, CircleCheck, Info, Minus, ShieldCheck, TrendingDown, TrendingUp, TriangleAlert } from 'lucide-react';
+import { Info, Lightbulb, TriangleAlert, CircleAlert, CircleCheck } from 'lucide-react';
+import { fmtPrice, type Asset, type AssetDef } from '../lib/assets';
 import { SIGNAL_META, type Signal, type SignalLevel } from '../lib/indicators';
-import { pct, usd } from '../lib/format';
+import { pct } from '../lib/format';
 
 export const APP_NAME = 'Funda';
 
@@ -11,18 +12,19 @@ type Icon = ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
 export const prefersReducedMotion = () =>
   typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-export function Logo({ to = '/' }: { to?: string }) {
+/** Logotipo: la palabra en serif y un cuadradito de marcador. */
+export function Logo({ to = '/', size = 'md' }: { to?: string; size?: 'md' | 'lg' }) {
   return (
-    <Link to={to} className="flex items-center gap-2.5 rounded-lg" aria-label={`${APP_NAME}, inicio`}>
-      <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" width={32} height={32} className="h-8 w-8 rounded-[9px]" />
-      <span className="font-display text-[22px] font-bold tracking-[-0.04em] text-white">{APP_NAME}</span>
+    <Link to={to} className="inline-flex items-baseline gap-0.5 rounded-sm" aria-label={`${APP_NAME}, inicio`}>
+      <span className={`font-display font-semibold tracking-[-0.04em] text-ink ${size === 'lg' ? 'text-4xl' : 'text-[28px]'} leading-none`}>{APP_NAME}</span>
+      <span aria-hidden className={`inline-block bg-mark ${size === 'lg' ? 'size-2.5' : 'size-2'}`} />
     </Link>
   );
 }
 
-/** 7-day trend line. `area` adds a soft fill, used as a decorative brand device. */
-export function Sparkline({ data, className = 'h-12 w-full', area = false }: { data: number[]; className?: string; area?: boolean }) {
-  const gid = 'g' + useId().replace(/[^\w-]/g, '');
+/** Mini-gráfica de tendencia. `area` agrega un relleno rayado, como en los gráficos de periódico. */
+export function Sparkline({ data, className = 'h-10 w-full', area = false }: { data: number[]; className?: string; area?: boolean }) {
+  const pid = 'h' + useId().replace(/[^\w-]/g, '');
   if (data.length < 2) return <div className={className} aria-hidden />;
   const min = Math.min(...data);
   const range = Math.max(...data) - min || 1;
@@ -33,12 +35,11 @@ export function Sparkline({ data, className = 'h-12 w-full', area = false }: { d
       {area && (
         <>
           <defs>
-            <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="currentColor" stopOpacity={0.3} />
-              <stop offset="100%" stopColor="currentColor" stopOpacity={0} />
-            </linearGradient>
+            <pattern id={pid} width="3" height="3" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <line x1="0" y1="0" x2="0" y2="3" stroke="currentColor" strokeWidth="0.6" strokeOpacity="0.45" />
+            </pattern>
           </defs>
-          <polygon points={`0,30 ${pts} 100,30`} fill={`url(#${gid})`} />
+          <polygon points={`0,30 ${pts} 100,30`} fill={`url(#${pid})`} />
         </>
       )}
       <polyline points={pts} fill="none" stroke="currentColor" strokeWidth="1.5" vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
@@ -46,74 +47,70 @@ export function Sparkline({ data, className = 'h-12 w-full', area = false }: { d
   );
 }
 
-/** A price that briefly flashes green/red when it changes. Color only, so digits never move. */
-export function Price({ value, className = '' }: { value?: number | null; className?: string }) {
+/** Precio que destella en verde o rojo cuando cambia. Solo cambia de color: los dígitos no se mueven. */
+export function Price({ value, asset, className = '' }: { value?: number | null; asset?: Pick<AssetDef, 'unit' | 'symbol'>; className?: string }) {
   const ref = useRef<HTMLSpanElement>(null);
   const prev = useRef(value);
   useEffect(() => {
     const p = prev.current;
     prev.current = value;
     if (p == null || value == null || p === value) return;
-    const up = value > p;
-    ref.current?.animate(
-      [{ backgroundColor: up ? 'rgb(52 211 153 / 0.2)' : 'rgb(251 113 133 / 0.2)', color: up ? '#6ee7b7' : '#fda4af' }, {}],
-      { duration: 1200, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' },
-    );
+    const tone = value > p ? 'var(--up)' : 'var(--down)';
+    ref.current?.animate([{ backgroundColor: `color-mix(in srgb, ${tone} 28%, transparent)` }, { backgroundColor: 'transparent' }], {
+      duration: 1200,
+      easing: 'cubic-bezier(0.23, 1, 0.32, 1)',
+    });
   }, [value]);
   return (
-    <span ref={ref} className={`num -mx-1 rounded-md px-1 ${className}`}>
-      {usd(value)}
+    <span ref={ref} className={`num -mx-1 rounded-[3px] px-1 ${className}`}>
+      {fmtPrice(asset ?? { unit: 'usd', symbol: 'USD' }, value)}
     </span>
   );
 }
 
-export function Change({ value, className = '' }: { value?: number | null; className?: string }) {
-  if (value == null || !Number.isFinite(value)) return <span className={`num text-slate-500 ${className}`}>—</span>;
+/** Variación con triángulo (▲ ▼) al estilo de las tablas de bolsa. */
+export function Change({ value, className = '', inverse = false }: { value?: number | null; className?: string; inverse?: boolean }) {
+  if (value == null || !Number.isFinite(value)) return <span className={`num text-ink-3 ${className}`}>—</span>;
   const r = Math.round(value * 100) / 100;
   if (r === 0) {
     return (
-      <span className={`num inline-flex items-center gap-1 font-medium text-slate-400 ${className}`}>
-        <Minus className="h-3.5 w-3.5 shrink-0" aria-hidden />
+      <span className={`num inline-flex items-center gap-1 font-medium text-ink-2 ${className}`}>
+        <span aria-hidden>■</span>
         <span className="sr-only">Sin cambio </span>0.00%
       </span>
     );
   }
   const up = r > 0;
-  const Icon = up ? TrendingUp : TrendingDown;
   return (
-    <span className={`num inline-flex items-center gap-1 font-medium ${up ? 'text-up' : 'text-down'} ${className}`}>
-      <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+    <span className={`num inline-flex items-center gap-1 font-medium ${up ? (inverse ? 'text-up-inv' : 'text-up') : inverse ? 'text-down-inv' : 'text-down'} ${className}`}>
+      <span aria-hidden className="text-[0.7em]">{up ? '▲' : '▼'}</span>
       <span className="sr-only">{up ? 'Sube ' : 'Baja '}</span>
-      {pct(r)}
+      {pct(r).replace(/^[+-]/, '')}
     </span>
   );
 }
 
-const TONE_TEXT: Record<SignalLevel, string> = { favorable: 'text-emerald-300', neutral: 'text-amber-300', precaucion: 'text-rose-300' };
-const TONE_BAR: Record<SignalLevel, string> = { favorable: 'bg-emerald-400', neutral: 'bg-amber-300', precaucion: 'bg-rose-400' };
-const TONE_BOX: Record<SignalLevel, string> = {
-  favorable: 'border-emerald-400/30 bg-emerald-400/[0.08]',
-  neutral: 'border-amber-300/30 bg-amber-300/[0.08]',
-  precaucion: 'border-rose-400/30 bg-rose-400/[0.08]',
-};
+const TONE_TEXT: Record<SignalLevel, string> = { favorable: 'text-up', neutral: 'text-warn', precaucion: 'text-down' };
+const TONE_BAR: Record<SignalLevel, string> = { favorable: 'bg-up', neutral: 'bg-warn', precaucion: 'bg-down' };
+const TONE_BORDER: Record<SignalLevel, string> = { favorable: 'border-up', neutral: 'border-warn', precaucion: 'border-down' };
 
-/** Signal readout: the level is shown by bar count (shape) as well as color. */
+/** Sello de señal: el nivel se ve por la cantidad de barras (forma) y por el color. */
 export function SignalBadge({ level, long = false, ready = true }: { level?: SignalLevel; long?: boolean; ready?: boolean }) {
   if (!level) {
     return (
-      <span className="chip shrink-0 whitespace-nowrap text-slate-400">
-        {ready ? 'Sin datos' : <span className="animate-pulse">Analizando…</span>}
+      <span className="chip shrink-0 whitespace-nowrap">
+        {ready ? 'Sin señal' : <span className="animate-pulse">Analizando…</span>}
       </span>
     );
   }
   const meta = SIGNAL_META[level];
   return (
     <span
-      className={`inline-flex shrink-0 items-center gap-2 rounded-full border px-2.5 py-1 text-xs font-semibold whitespace-nowrap ${TONE_BOX[level]} ${TONE_TEXT[level]}`}
+      className={`inline-flex shrink-0 items-center gap-2 rounded-[3px] border px-2 py-[3px] font-mono text-[11px] font-semibold tracking-[0.06em] whitespace-nowrap uppercase ${TONE_BORDER[level]} ${TONE_TEXT[level]}`}
     >
       <span className="flex items-end gap-[2px]" aria-hidden>
         {[0, 1, 2].map((i) => (
-          <span key={i} className={`w-[3px] rounded-[1px] ${['h-1.5', 'h-2', 'h-2.5'][i]} ${i < meta.bars ? TONE_BAR[level] : 'bg-white/15'}`} />
+          <span key={i} className={`w-[3px] ${['h-1.5', 'h-2', 'h-2.5'][i]} ${i < meta.bars ? TONE_BAR[level] : 'bg-ink/20'}`} />
         ))}
       </span>
       {long ? meta.label : meta.short}
@@ -121,44 +118,65 @@ export function SignalBadge({ level, long = false, ready = true }: { level?: Sig
   );
 }
 
-/** Horizontal gauge from caution to favorable. Score runs from about -4 to +3. */
+/** Termómetro: una regla con marcas y un puntero. La puntuación va de aproximadamente -4 a +3. */
 export function SignalMeter({ signal }: { signal?: Signal }) {
   const pos = signal ? Math.min(100, Math.max(0, ((signal.score + 4) / 7) * 100)) : 50;
+  const ticks = 29;
   return (
     <div aria-hidden>
-      <div className="h-2 rounded-full bg-gradient-to-r from-rose-400 via-amber-300 to-emerald-400" />
-      <div className="relative h-3">
+      <div className="relative pt-3">
         <span
-          className={`absolute -top-3.5 h-5 w-1.5 -translate-x-1/2 rounded-full bg-white shadow-[0_0_0_3px_var(--color-surface)] transition-[left] duration-700 ease-[var(--ease-out)] ${signal ? '' : 'opacity-0'}`}
+          className={`absolute top-0 -translate-x-1/2 text-[10px] leading-none text-ink transition-[left] duration-700 ease-[var(--ease-out)] ${signal ? '' : 'opacity-0'}`}
           style={{ left: `${pos}%` }}
-        />
+        >
+          ▼
+        </span>
+        <div className="flex h-5 items-end justify-between border-b border-ink">
+          {Array.from({ length: ticks }, (_, i) => (
+            <span key={i} className={`w-px bg-ink ${i % 7 === 0 ? 'h-5' : i % 7 === 3 || i % 7 === 4 ? 'h-3' : 'h-2'}`} />
+          ))}
+        </div>
       </div>
-      <div className="flex justify-between text-xs text-slate-400">
-        <span>Precaución</span>
-        <span>Neutral</span>
-        <span>Favorable</span>
+      <div className="mt-1.5 flex justify-between font-mono text-[11px] tracking-[0.06em] text-ink-2 uppercase">
+        <span className="text-down">Precaución</span>
+        <span className="text-warn">Neutral</span>
+        <span className="text-up">Favorable</span>
       </div>
     </div>
   );
 }
 
-export function PageHeader({ eyebrow, title, description, actions }: { eyebrow?: ReactNode; title: ReactNode; description?: ReactNode; actions?: ReactNode }) {
+/** Cabecera de página: etiqueta, titular grande en serif, bajada y filete doble. */
+export function PageHeader({ kicker, title, description, actions }: { kicker?: ReactNode; title: ReactNode; description?: ReactNode; actions?: ReactNode }) {
   return (
-    <header className="flex flex-wrap items-end justify-between gap-4">
+    <header className="rule-double flex flex-wrap items-end justify-between gap-x-6 gap-y-4 pt-5 pb-6">
       <div className="min-w-0">
-        {eyebrow && <p className="mb-1 text-sm text-slate-400 first-letter:uppercase">{eyebrow}</p>}
-        <h1 className="text-2xl font-bold sm:text-3xl">{title}</h1>
-        {description && <p className="mt-1.5 max-w-2xl text-slate-400">{description}</p>}
+        {kicker && <p className="kicker mb-2">{kicker}</p>}
+        <h1 className="text-[clamp(2rem,5vw,3.25rem)] leading-[1.02]">{title}</h1>
+        {description && <p className="mt-3 max-w-2xl text-[17px] leading-relaxed text-ink-2">{description}</p>}
       </div>
       {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
     </header>
   );
 }
 
-export function IconTile({ icon: Icon, size = 'md' }: { icon: Icon; size?: 'sm' | 'md' | 'lg' }) {
-  const s = { sm: 'size-8 rounded-lg [&>svg]:size-4', md: 'size-11 rounded-xl [&>svg]:size-5', lg: 'size-14 rounded-2xl [&>svg]:size-7' }[size];
+/** Encabezado de sección numerado, con filete superior. */
+export function SectionHead({ n, title, aside, id }: { n?: string; title: ReactNode; aside?: ReactNode; id?: string }) {
   return (
-    <span className={`grid shrink-0 place-items-center bg-emerald-400/10 text-emerald-300 ${s}`}>
+    <div className="rule flex items-baseline justify-between gap-4 pt-3 pb-4">
+      <h2 id={id} tabIndex={id ? -1 : undefined} className="text-2xl leading-tight outline-none sm:text-[1.7rem]">
+        {n && <span className="kicker mr-3 align-middle">{n}</span>}
+        {title}
+      </h2>
+      {aside && <div className="shrink-0 text-sm text-ink-2">{aside}</div>}
+    </div>
+  );
+}
+
+export function IconTile({ icon: Icon, size = 'md' }: { icon: Icon; size?: 'sm' | 'md' | 'lg' }) {
+  const s = { sm: 'size-8 [&>svg]:size-4', md: 'size-11 [&>svg]:size-5', lg: 'size-14 [&>svg]:size-7' }[size];
+  return (
+    <span className={`grid shrink-0 place-items-center rounded-[4px] border border-ink bg-mark text-[#17140f] ${s}`}>
       <Icon aria-hidden />
     </span>
   );
@@ -166,22 +184,24 @@ export function IconTile({ icon: Icon, size = 'md' }: { icon: Icon; size?: 'sm' 
 
 export function EmptyState({ icon, title, description, action }: { icon: Icon; title: ReactNode; description?: ReactNode; action?: ReactNode }) {
   return (
-    <div className="flex flex-col items-center px-6 py-12 text-center">
+    <div className="flex flex-col items-center rounded-[5px] border border-dashed border-ink/40 px-6 py-12 text-center">
       <IconTile icon={icon} size="lg" />
-      <p className="mt-4 font-semibold text-white">{title}</p>
-      {description && <p className="mt-1 max-w-sm text-sm text-slate-400">{description}</p>}
+      <p className="mt-4 font-display text-xl font-semibold text-ink">{title}</p>
+      {description && <p className="mt-1 max-w-sm text-sm text-ink-2">{description}</p>}
       {action && <div className="mt-5">{action}</div>}
     </div>
   );
 }
 
 const CALLOUT = {
-  info: { box: 'border-white/10 bg-white/[0.03] text-slate-300', icon: Info, iconColor: 'text-slate-400' },
-  success: { box: 'border-emerald-400/25 bg-emerald-400/[0.06] text-emerald-100', icon: CircleCheck, iconColor: 'text-emerald-300' },
-  warn: { box: 'border-amber-300/25 bg-amber-300/[0.06] text-amber-100', icon: TriangleAlert, iconColor: 'text-amber-300' },
-  danger: { box: 'border-rose-400/30 bg-rose-400/10 text-rose-100', icon: CircleAlert, iconColor: 'text-rose-300' },
+  info: { bar: 'bg-ink', icon: Info, iconColor: 'text-ink-2' },
+  tip: { bar: 'bg-mark', icon: Lightbulb, iconColor: 'text-ink' },
+  success: { bar: 'bg-up', icon: CircleCheck, iconColor: 'text-up' },
+  warn: { bar: 'bg-warn', icon: TriangleAlert, iconColor: 'text-warn' },
+  danger: { bar: 'bg-down', icon: CircleAlert, iconColor: 'text-down' },
 };
 
+/** Nota con barra lateral de color, como un recuadro de periódico. */
 export function Callout({
   tone = 'info',
   icon,
@@ -205,11 +225,12 @@ export function Callout({
     <div
       id={id}
       role={tone === 'danger' ? 'alert' : tone === 'success' ? 'status' : undefined}
-      className={`flex items-start gap-3 rounded-xl border p-4 text-sm leading-relaxed ${t.box} ${className}`}
+      className={`relative flex items-start gap-3 rounded-[4px] border border-line bg-paper-2 py-3.5 pr-4 pl-5 text-sm leading-relaxed text-ink-2 ${className}`}
     >
+      <span aria-hidden className={`absolute inset-y-0 left-0 w-1 ${t.bar}`} />
       <Ico className={`mt-0.5 size-4 shrink-0 ${t.iconColor}`} aria-hidden />
       <div className="min-w-0 flex-1">
-        {title && <p className="font-semibold text-white">{title}</p>}
+        {title && <p className="font-semibold text-ink">{title}</p>}
         {children && <div className={title ? 'mt-0.5' : ''}>{children}</div>}
       </div>
       {action && <div className="shrink-0 self-center">{action}</div>}
@@ -217,23 +238,24 @@ export function Callout({
   );
 }
 
-/** Coin logo with a lettered fallback when the image is missing or fails to load. */
-export function CoinAvatar({ src, symbol, size = 'md' }: { src?: string; symbol: string; size?: 'sm' | 'md' | 'lg' | 'xl' }) {
+/** Marca de un activo: logo de la moneda, o un monograma tipográfico para el resto. */
+export function AssetMark({ asset, size = 'md' }: { asset: Pick<Asset, 'symbol' | 'kind'> & { image?: string }; size?: 'sm' | 'md' | 'lg' | 'xl' }) {
   const [failed, setFailed] = useState(false);
-  const s = { sm: 'size-5 text-[8px]', md: 'size-8 text-[11px]', lg: 'size-10 text-xs', xl: 'size-14 text-base' }[size];
+  const s = { sm: 'size-6 text-[9px]', md: 'size-9 text-[11px]', lg: 'size-11 text-xs', xl: 'size-16 text-base' }[size];
+  const logo = asset.image && !failed;
   return (
-    <span className={`relative grid shrink-0 place-items-center overflow-hidden rounded-full bg-white/[0.08] font-bold text-slate-300 ring-1 ring-white/10 ${s}`}>
-      {src && !failed ? (
+    <span className={`relative grid shrink-0 place-items-center overflow-hidden rounded-[4px] border border-ink/70 bg-paper font-mono font-semibold text-ink ${s}`}>
+      {logo ? (
         <img
-          // CoinGecko's "large" logo is ~250px; "small" is plenty for icons up to 32px
-          src={size === 'sm' || size === 'md' ? src.replace('/large/', '/small/') : src}
+          // El logo "large" de CoinGecko pesa ~250 px; "small" alcanza para íconos de hasta 36 px
+          src={size === 'sm' || size === 'md' ? asset.image!.replace('/large/', '/small/') : asset.image}
           alt=""
           decoding="async"
           className="size-full object-cover"
           onError={() => setFailed(true)}
         />
       ) : (
-        symbol.slice(0, 3).toUpperCase()
+        asset.symbol.slice(0, 3)
       )}
     </span>
   );
@@ -242,13 +264,15 @@ export function CoinAvatar({ src, symbol, size = 'md' }: { src?: string; symbol:
 interface SegOption<T extends string | number> {
   value: T;
   label: ReactNode;
+  /** Etiqueta corta para pantallas angostas. */
+  short?: ReactNode;
   id?: string;
   controls?: string;
 }
 
 /**
- * Segmented control with a sliding indicator and arrow-key navigation.
- * mode="radio" for choosing a value (e.g. chart range); mode="tabs" for switching panels.
+ * Control segmentado con indicador que se desliza y navegación con flechas.
+ * mode="radio" para elegir un valor (p. ej. el rango de la gráfica); mode="tabs" para cambiar de panel.
  */
 export function Segmented<T extends string | number>({
   options,
@@ -269,35 +293,28 @@ export function Segmented<T extends string | number>({
 }) {
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
   const ind = useRef<HTMLSpanElement>(null);
-  const root = useRef<HTMLDivElement>(null);
   const placed = useRef(false);
   const active = Math.max(0, options.findIndex((o) => o.value === value));
 
+  // El indicador se desliza solo cuando cambia la selección; al cargar, al cambiar el tamaño o al llegar las tipografías salta a su sitio
+  const place = (snap: boolean) => {
+    const b = refs.current[active];
+    const el = ind.current;
+    if (!b || !el) return;
+    el.style.transitionDuration = snap ? '0ms' : '';
+    el.style.transform = `translateX(${b.offsetLeft}px)`;
+    el.style.width = `${b.offsetWidth}px`;
+  };
   useLayoutEffect(() => {
-    const place = () => {
-      const b = refs.current[active];
-      const el = ind.current;
-      if (!b || !el) return;
-      // First placement (and resizes) snap into position; only user changes slide
-      if (!placed.current) el.style.transitionDuration = '0ms';
-      el.style.transform = `translateX(${b.offsetLeft}px)`;
-      el.style.width = `${b.offsetWidth}px`;
-      if (!placed.current) {
-        el.getBoundingClientRect();
-        el.style.transitionDuration = '';
-        placed.current = true;
-      }
-    };
-    place();
-    let initial = true; // ResizeObserver fires once on observe; ignore it so it can't cut the slide short
-    const ro = new ResizeObserver(() => {
-      if (initial) return void (initial = false);
-      placed.current = false;
-      place();
-    });
-    if (root.current) ro.observe(root.current);
-    return () => ro.disconnect();
-  }, [active, options.length]);
+    place(!placed.current);
+    placed.current = true;
+  }, [active, options.length]); // eslint-disable-line
+  useEffect(() => {
+    const snap = () => place(true);
+    window.addEventListener('resize', snap);
+    document.fonts?.ready.then(snap);
+    return () => window.removeEventListener('resize', snap);
+  }, [active]); // eslint-disable-line
 
   const onKeyDown = (e: KeyboardEvent) => {
     const n = { ArrowRight: active + 1, ArrowLeft: active - 1, Home: 0, End: options.length - 1 }[e.key];
@@ -311,17 +328,12 @@ export function Segmented<T extends string | number>({
   const tabs = mode === 'tabs';
   return (
     <div
-      ref={root}
       role={tabs ? 'tablist' : 'radiogroup'}
       aria-label={label}
       onKeyDown={onKeyDown}
-      className={`relative flex rounded-xl border border-white/10 bg-white/[0.03] p-1 ${className}`}
+      className={`relative flex rounded-[5px] border border-ink bg-paper p-0.5 ${className}`}
     >
-      <span
-        ref={ind}
-        aria-hidden
-        className="absolute inset-y-1 left-0 rounded-lg bg-emerald-400/15 ring-1 ring-emerald-400/20 transition-[transform,width] duration-[250ms] ease-[var(--ease-out)]"
-      />
+      <span ref={ind} aria-hidden className="absolute inset-y-0.5 left-0 rounded-[3px] bg-ink transition-[transform,width] duration-[250ms] ease-[var(--ease-out)]" />
       {options.map((o, i) => {
         const on = i === active;
         return (
@@ -338,11 +350,18 @@ export function Segmented<T extends string | number>({
             aria-controls={o.controls}
             tabIndex={on ? 0 : -1}
             onClick={() => onChange(o.value)}
-            className={`relative z-10 flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-colors pointer-coarse:min-h-10 ${
-              on ? 'text-emerald-200' : 'text-slate-400 hover:text-white'
+            className={`relative z-10 min-w-0 flex-1 rounded-[3px] px-2 py-1.5 font-mono text-[11px] sm:px-3 sm:text-xs font-semibold tracking-wide whitespace-nowrap transition-colors pointer-coarse:min-h-10 ${
+              on ? 'text-on-ink' : 'text-ink-2 hover:text-ink'
             } ${itemClassName}`}
           >
-            {o.label}
+            {o.short ? (
+              <>
+                <span className="sm:hidden">{o.short}</span>
+                <span className="hidden sm:inline">{o.label}</span>
+              </>
+            ) : (
+              o.label
+            )}
           </button>
         );
       })}
@@ -352,25 +371,24 @@ export function Segmented<T extends string | number>({
 
 export function Disclaimer({ className = '' }: { className?: string }) {
   return (
-    <p className={`flex items-start gap-2 text-xs leading-relaxed text-slate-400 ${className}`}>
-      <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-      {APP_NAME} es una herramienta educativa. Las señales se calculan con indicadores técnicos automáticos y no son asesoría
-      financiera. Las criptomonedas son volátiles: invierte solo lo que puedas permitirte perder.
+    <p className={`text-xs leading-relaxed text-ink-2 ${className}`}>
+      <strong className="font-semibold text-ink">Aviso.</strong> {APP_NAME} es una herramienta educativa. Las señales se calculan con indicadores técnicos automáticos y no son
+      asesoría financiera ni una recomendación de compra o venta. Todas las inversiones pueden perder valor; invierte solo lo que puedas permitirte perder.
     </p>
   );
 }
 
 export function Skeleton({ className = '' }: { className?: string }) {
-  return <div aria-hidden className={`animate-pulse rounded-xl bg-white/[0.05] ${className}`} />;
+  return <div aria-hidden className={`animate-pulse rounded-[3px] bg-paper-3 ${className}`} />;
 }
 
-// Minimal **bold** support for AI answers (we ask Gemini to avoid other markdown)
+// **negritas** mínimas para las respuestas de la IA (le pedimos que evite otro markdown)
 export function renderBold(text: string) {
-  // Gemini still emits "* " bullets and *italics* now and then: normalize them before splitting on **bold**
+  // Gemini aún emite viñetas "* " y *cursivas* de vez en cuando: las normalizamos antes de separar **negritas**
   const clean = text.replace(/^\s*[*-]\s+/gm, '• ').replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1$2');
   return clean.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
     part.startsWith('**') && part.endsWith('**') && part.length > 4 ? (
-      <strong key={i} className="font-semibold text-white">
+      <strong key={i} className="font-semibold text-ink">
         {part.slice(2, -2)}
       </strong>
     ) : (

@@ -5,8 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Funda · Aprende a invertir en cripto sin tecnicismos</title>
     <meta name="description" content="Precios en vivo, señales explicadas en palabras simples, alertas de precio y un asistente con IA que responde tus dudas sobre criptomonedas. Gratis y en español." />
-    <meta name="theme-color" content="#05080f" />
-    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#f4f0e6" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#12100c" media="(prefers-color-scheme: dark)" />
+    <meta name="color-scheme" content="light dark" />
+    <!-- Aplica el tema guardado antes del primer pintado para evitar un destello -->
+    <script>
+      try {
+        var t = JSON.parse(localStorage.getItem("funda:theme"));
+        if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+      } catch (e) {}
+    </script>
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
     <link rel="manifest" href="manifest.webmanifest" />
@@ -39,8 +47,8 @@
   <body>
     <!-- Content for crawlers and visitors without JavaScript; keep in sync with the Landing copy -->
     <noscript>
-      <main style="max-width: 48rem; margin: 0 auto; padding: 3rem 1.5rem; font-family: system-ui, sans-serif; line-height: 1.6; color: #e2e8f0; background: #05080f">
-        <h1 style="font-size: 2.25rem; line-height: 1.1; color: #fff">Invierte en cripto entendiendo lo que haces</h1>
+      <main style="max-width: 48rem; margin: 0 auto; padding: 3rem 1.5rem; font-family: system-ui, sans-serif; line-height: 1.6; background: #f4f0e6; color: #17140f">
+        <h1 style="font-size: 2.25rem; line-height: 1.1; color: #17140f">Invierte en cripto entendiendo lo que haces</h1>
         <p>Funda te explica cada criptomoneda y cada término en palabras simples, te muestra qué dicen hoy los indicadores del mercado y responde tus dudas con IA. Gratis y sin tocar nunca tu dinero.</p>
         <ul>
           <li><strong>Precios en vivo</strong> de Bitcoin, Ethereum, XRP, BNB y Solana, con gráficas de 24 horas a 1 año.</li>

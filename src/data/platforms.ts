@@ -4,6 +4,8 @@ export interface Platform {
   description: string;
   bestFor: string;
   tags: string[];
+  /** Aviso corto visible en la tarjeta. */
+  note?: string;
 }
 
 export const EXCHANGES: Platform[] = [
@@ -19,7 +21,7 @@ export const EXCHANGES: Platform[] = [
     url: 'https://www.coinbase.com',
     description: 'Exchange estadounidense que cotiza en bolsa, conocido por su facilidad de uso.',
     bestFor: 'Principiantes que priorizan una interfaz simple y regulación.',
-    tags: ['Centralizado', 'Regulado', 'Principiantes'],
+    tags: ['Centralizado', 'Regulado', 'Para principiantes'],
   },
   {
     name: 'Kraken',
@@ -34,6 +36,7 @@ export const EXCHANGES: Platform[] = [
     description: 'Exchange latinoamericano con presencia en México, Argentina, Colombia y Brasil.',
     bestFor: 'Depósitos y retiros en moneda local de Latinoamérica.',
     tags: ['Latam', 'Moneda local'],
+    note: 'Revisa si opera en tu país.',
   },
   {
     name: 'OKX',
@@ -51,6 +54,33 @@ export const EXCHANGES: Platform[] = [
   },
 ];
 
+export const BROKERS: Platform[] = [
+  {
+    name: 'Interactive Brokers',
+    url: 'https://www.interactivebrokers.com',
+    description: 'Broker global con acceso a bolsas de decenas de países: acciones, ETFs, bonos y divisas, con comisiones bajas.',
+    bestFor: 'Quien quiere invertir en ETFs y acciones de todo el mundo desde una sola cuenta.',
+    tags: ['Broker', 'ETFs', 'Global'],
+    note: 'Verifica disponibilidad para residentes de tu país.',
+  },
+  {
+    name: 'eToro',
+    url: 'https://www.etoro.com',
+    description: 'Plataforma con interfaz simple para acciones, ETFs y cripto, con herramientas para seguir y copiar a otros inversionistas.',
+    bestFor: 'Principiantes que quieren una app sencilla para acciones, ETFs y cripto.',
+    tags: ['Broker', 'Acciones', 'Para principiantes'],
+    note: 'Los productos disponibles cambian según el país.',
+  },
+  {
+    name: 'Bolsa de Valores de El Salvador',
+    url: 'https://www.bves.com.sv',
+    description: 'La bolsa local, donde se negocian valores y títulos de renta fija a través de casas corredoras autorizadas.',
+    bestFor: 'Conocer el mercado de valores salvadoreño y las casas corredoras que operan en él.',
+    tags: ['Local', 'Renta fija', 'Casas corredoras'],
+    note: 'Consulta con una casa corredora autorizada.',
+  },
+];
+
 export const WALLETS: Platform[] = [
   {
     name: 'MetaMask',
@@ -64,7 +94,7 @@ export const WALLETS: Platform[] = [
     url: 'https://trustwallet.com',
     description: 'App móvil multired y sencilla, compatible con miles de tokens.',
     bestFor: 'Principiantes que quieren una billetera móvil para varias redes.',
-    tags: ['Caliente', 'Autocustodia', 'Multired'],
+    tags: ['Caliente', 'Autocustodia', 'Para principiantes'],
   },
   {
     name: 'Phantom',

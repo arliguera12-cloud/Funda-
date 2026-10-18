@@ -1,12 +1,12 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import type { Chat } from '@google/genai';
-import { Bot, LoaderCircle, Send, Sparkles } from 'lucide-react';
+import { ArrowUpRight, LoaderCircle, RotateCcw, Send, Sparkles } from 'lucide-react';
 import { aiEnabled, createChat, marketContext } from '../lib/ai';
 import { glossaryAnswer } from '../lib/glossary-answer';
 import { useMarket } from '../lib/market-context';
 import { useAuth } from '../lib/auth';
-import { renderBold } from '../components/ui';
+import { markStep } from '../lib/onboarding';
+import { PageHeader, prefersReducedMotion, renderBold } from '../components/ui';
 
 interface Msg {
   role: 'user' | 'model';
@@ -14,42 +14,79 @@ interface Msg {
 }
 
 const SUGGESTIONS = [
-  '¿Qué es blockchain?',
-  '¿Qué significa tokenizar?',
-  '¿Cómo recibo criptomonedas?',
-  '¿Es buen momento para invertir en Bitcoin?',
-  '¿Qué es una frase semilla?',
+  '¿Qué es un ETF y en qué se diferencia de una acción?',
+  '¿Qué es la inflación y cómo me afecta?',
+  'Explícame el interés compuesto con un ejemplo',
+  '¿Cómo empiezo a invertir con poco dinero?',
   '¿Qué es el DCA?',
+  '¿Qué es una frase semilla?',
+  '¿Qué es blockchain?',
+  '¿Qué son los bonos?',
 ];
+const FOLLOW_UPS = ['Dame un ejemplo', '¿Qué riesgos tiene?', 'Explícalo más simple'];
+const OFFLINE_MISS = 'Todavía no tengo ese término';
 
 export default function Assistant() {
   const { user } = useAuth();
-  const { coins, signals } = useMarket();
+  const { assets, signals, signalsReady } = useMarket();
   const [params, setParams] = useSearchParams();
-  const [messages, setMessages] = useState<Msg[]>([]);
+  const u = user!;
+  const storeKey = `funda:chat:${u.uid}`;
+  const [messages, setMessages] = useState<Msg[]>(() => {
+    try {
+      const m = JSON.parse(sessionStorage.getItem(storeKey) ?? '[]');
+      return Array.isArray(m) ? m.filter((x: Msg) => x && typeof x.text === 'string') : [];
+    } catch {
+      return [];
+    }
+  });
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
-  const chat = useRef<Chat | null>(null);
-  const bottom = useRef<HTMLDivElement>(null);
+  const list = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => bottom.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }), [messages]);
+  // La conversación sobrevive a ir a un activo y volver
+  useEffect(() => {
+    if (busy) return;
+    try {
+      sessionStorage.setItem(storeKey, JSON.stringify(messages));
+    } catch {
+      /* guardar es opcional */
+    }
+  }, [messages, busy, storeKey]);
+
+  // Se desplaza el contenedor del chat, no la página; y solo si la persona ya estaba al final
+  useEffect(() => {
+    const el = list.current;
+    if (!el || !messages.length) return;
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 120) el.scrollTo({ top: el.scrollHeight, behavior: busy || prefersReducedMotion() ? 'auto' : 'smooth' });
+  }, [messages, busy]);
 
   const send = async (text: string) => {
     const q = text.trim();
     if (!q || busy) return;
+    const previous = messages;
     setInput('');
     setBusy(true);
-    setMessages((m) => [...m, { role: 'user', text: q }, { role: 'model', text: '' }]);
+    setMessages([...previous, { role: 'user', text: q }, { role: 'model', text: '' }]);
+    inputRef.current?.focus();
     const write = (t: string) => setMessages((m) => [...m.slice(0, -1), { role: 'model', text: t }]);
 
     try {
-      if (!aiEnabled) return write(glossaryAnswer(q));
-      chat.current ??= await createChat(marketContext(coins, signals));
+      if (!aiEnabled) {
+        write(glossaryAnswer(q));
+        markStep(u.uid, 'ai');
+        return;
+      }
+      // Se reconstruye el chat en cada mensaje con datos frescos y los turnos anteriores
+      const chat = await createChat(marketContext(assets, signals), previous);
       let acc = '';
-      for await (const chunk of await chat.current!.sendMessageStream({ message: q })) {
+      for await (const chunk of await chat!.sendMessageStream({ message: q })) {
         acc += chunk.text ?? '';
         write(acc);
       }
+      if (!acc.trim()) write('No obtuve una respuesta esta vez. Esto dice el glosario:\n\n' + glossaryAnswer(q));
+      else markStep(u.uid, 'ai');
     } catch (e) {
       console.error(e);
       write('No pude responder en este momento (puede ser un límite de uso de la IA). Mientras tanto, esto dice el glosario:\n\n' + glossaryAnswer(q));
@@ -58,16 +95,19 @@ export default function Assistant() {
     }
   };
 
-  // Questions sent from other screens (e.g. "Explícamelo con IA")
+  // Preguntas que llegan desde otras pantallas ("Explícamelo con IA")
   const preset = params.get('q');
   const lastPreset = useRef<string | null>(null);
   useEffect(() => {
-    if (preset && preset !== lastPreset.current && (coins.length || !aiEnabled)) {
+    if (preset && preset !== lastPreset.current && ((assets.length && signalsReady) || !aiEnabled)) {
       lastPreset.current = preset;
       setParams({}, { replace: true });
       send(preset);
     }
-  }, [preset, coins.length]);
+  }, [preset, assets.length, signalsReady]); // eslint-disable-line
+
+  const suggestions = useMemo(() => (aiEnabled ? SUGGESTIONS : SUGGESTIONS.filter((s) => !glossaryAnswer(s).startsWith(OFFLINE_MISS))).slice(0, 6), []);
+  const lastIsModel = messages.length > 0 && messages[messages.length - 1].role === 'model';
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -75,72 +115,74 @@ export default function Assistant() {
   };
 
   return (
-    <div className="flex h-[calc(100dvh-11rem)] flex-col lg:h-[calc(100dvh-7rem)]">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold sm:text-3xl">Funda IA</h1>
-          <p className="mt-1 text-sm text-slate-400">Tu tutor de inversiones: pregunta cualquier término o duda, sin pena.</p>
-        </div>
-        <span className={`chip gap-1.5 ${aiEnabled ? 'border-emerald-400/30 text-emerald-300' : 'border-amber-400/30 text-amber-300'}`}>
-          <Sparkles className="h-3.5 w-3.5" aria-hidden /> {aiEnabled ? 'Gemini' : 'Modo glosario'}
-        </span>
-      </div>
+    <div>
+      <title>Funda IA · Funda</title>
+      <PageHeader
+        kicker={aiEnabled ? 'Tutor con IA' : 'Respuestas del glosario'}
+        title={<>Pregunta lo que <span className="mark">no entiendas</span></>}
+        description="Tu tutor de inversiones: acciones, bonos, ETFs, divisas y cripto, sin pena y sin tecnicismos."
+        actions={
+          messages.length > 0 && (
+            <button type="button" className="btn btn-ghost btn-sm" disabled={busy} onClick={() => setMessages([])}>
+              <RotateCcw className="size-4" aria-hidden /> Nueva conversación
+            </button>
+          )
+        }
+      />
 
-      <div className="card mt-5 flex min-h-0 flex-1 flex-col">
-        <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-6" aria-live="polite">
+      <div className="mx-auto mt-6 flex h-[68dvh] min-h-[26rem] max-w-3xl flex-col border border-ink bg-paper">
+        <div ref={list} role="log" aria-label="Conversación con Funda IA" aria-busy={busy} className="flex-1 space-y-7 overflow-y-auto p-4 sm:p-6">
           {messages.length === 0 && (
-            <div className="grid h-full place-items-center text-center">
-              <div>
-                <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-emerald-400/10 text-emerald-300">
-                  <Bot className="h-7 w-7" aria-hidden />
-                </span>
-                <p className="mt-4 font-semibold text-white">Hola {user!.name.split(' ')[0]}, ¿qué quieres aprender hoy?</p>
-                <p className="mt-1 text-sm text-slate-500">Conozco los precios y señales actuales del mercado.</p>
-                <div className="mt-6 flex max-w-xl flex-wrap justify-center gap-2">
-                  {SUGGESTIONS.map((s) => (
-                    <button key={s} onClick={() => send(s)} className="chip px-3 py-2 text-sm transition hover:border-emerald-400/40 hover:text-white">
-                      {s}
-                    </button>
-                  ))}
-                </div>
+            <div>
+              <p className="font-display text-[1.7rem] leading-tight font-semibold text-ink">Hola {u.name.split(' ')[0]}, ¿qué quieres aprender hoy?</p>
+              <p className="mt-2 text-sm text-ink-2">Conozco los precios y las señales del momento.</p>
+              <div className="mt-6 grid gap-2 sm:grid-cols-2">
+                {suggestions.map((s) => (
+                  <button key={s} onClick={() => send(s)} className="group flex items-center justify-between gap-3 rounded-[4px] border border-ink/40 bg-paper px-4 py-3 text-left text-sm font-medium text-ink transition-[background-color,transform] hover:bg-paper-3 active:translate-x-px active:translate-y-px">
+                    {s}
+                    <ArrowUpRight className="size-4 shrink-0 text-ink-2 transition-colors group-hover:text-ink" aria-hidden />
+                  </button>
+                ))}
               </div>
             </div>
           )}
-          {messages.map((m, i) => (
-            <div key={i} className={`flex gap-3 ${m.role === 'user' ? 'justify-end' : ''}`}>
-              {m.role === 'model' && (
-                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-emerald-400/10 text-emerald-300">
-                  <Bot className="h-4 w-4" aria-hidden />
-                </span>
-              )}
-              <div
-                className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${
-                  m.role === 'user' ? 'bg-gradient-to-r from-emerald-400 to-cyan-400 font-medium text-ink' : 'bg-white/[0.04] text-slate-200'
-                }`}
-              >
-                {m.text ? renderBold(m.text) : <LoaderCircle className="h-4 w-4 animate-spin text-slate-400" aria-label="Escribiendo" />}
+          {messages.map((m, i) =>
+            m.role === 'user' ? (
+              <div key={i} className="animate-fade-up flex justify-end" style={{ '--rise': '6px' } as React.CSSProperties}>
+                <p className="max-w-[85%] rounded-[4px] border border-ink bg-ink px-4 py-2.5 text-[15px] text-on-ink">{m.text}</p>
               </div>
-            </div>
-          ))}
-          <div ref={bottom} />
+            ) : (
+              <div key={i} className="animate-fade-up border-l-[3px] border-ink pl-4" style={{ '--rise': '6px', animationDelay: '80ms' } as React.CSSProperties}>
+                <p className="kicker mb-1.5 flex items-center gap-1.5"><Sparkles className="size-3" aria-hidden /> Funda IA</p>
+                {m.text ? (
+                  <div className="max-w-[40rem] text-[17px] leading-relaxed whitespace-pre-wrap text-ink">{renderBold(m.text)}</div>
+                ) : (
+                  <span role="status" className="flex gap-1 py-2" >
+                    <span className="sr-only">Funda IA está escribiendo…</span>
+                    {[0, 1, 2].map((d) => <span key={d} aria-hidden className="size-1.5 animate-typing bg-ink" style={{ animationDelay: `${d * 150}ms` }} />)}
+                  </span>
+                )}
+              </div>
+            ),
+          )}
         </div>
 
-        <form onSubmit={submit} className="flex gap-2 border-t border-white/[0.06] p-3 sm:p-4">
+        {lastIsModel && !busy && aiEnabled && (
+          <div className="flex flex-wrap gap-2 px-4 pt-3 sm:px-6">
+            {FOLLOW_UPS.map((f) => (
+              <button key={f} type="button" className="chip-btn !py-1 text-xs" onClick={() => send(f)}>{f}</button>
+            ))}
+          </div>
+        )}
+        <form onSubmit={submit} className="flex gap-2 border-t border-ink p-3 sm:p-4">
           <label htmlFor="msg" className="sr-only">Escribe tu pregunta</label>
-          <input
-            id="msg"
-            className="input"
-            placeholder="Ej.: ¿Qué es el staking y es seguro?"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            autoComplete="off"
-          />
-          <button type="submit" className="btn btn-primary px-4" disabled={busy || !input.trim()} aria-label="Enviar">
-            <Send className="h-4 w-4" aria-hidden />
+          <input ref={inputRef} id="msg" className="input" placeholder="Ej.: ¿Qué es un bono y es seguro?" value={input} onChange={(e) => setInput(e.target.value)} autoComplete="off" maxLength={500} enterKeyHint="send" />
+          <button type="submit" className="btn btn-primary btn-icon" aria-disabled={busy || !input.trim() || undefined} aria-label="Enviar">
+            {busy ? <LoaderCircle className="size-4 animate-spin" aria-hidden /> : <Send className="size-4" aria-hidden />}
           </button>
         </form>
       </div>
-      <p className="mt-3 text-center text-[11px] text-slate-500">La IA puede equivocarse. No es asesoría financiera.</p>
+      <p className="mx-auto mt-3 max-w-3xl text-center text-xs text-ink-2">La IA puede equivocarse. No es asesoría financiera.</p>
     </div>
   );
 }

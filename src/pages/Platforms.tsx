@@ -1,71 +1,71 @@
-import { ExternalLink, Landmark, ShieldCheck, Wallet } from 'lucide-react';
-import { EXCHANGES, WALLETS, type Platform } from '../data/platforms';
+import { ArrowUpRight, Landmark, ShieldCheck, Wallet, LineChart } from 'lucide-react';
+import { BROKERS, EXCHANGES, WALLETS, type Platform } from '../data/platforms';
+import { Callout, PageHeader, SectionHead } from '../components/ui';
 
-function PlatformCard({ p }: { p: Platform }) {
+function Card({ p }: { p: Platform }) {
+  const host = new URL(p.url).hostname.replace(/^www\./, '');
   return (
-    <article className="card flex flex-col p-5">
-      <div className="flex items-center gap-3">
-        <span className="grid h-9 w-9 place-items-center rounded-lg bg-emerald-400/10 font-display font-bold text-emerald-300" aria-hidden>
-          {p.name[0]}
-        </span>
-        <h3 className="text-lg font-semibold">{p.name}</h3>
-      </div>
-      <p className="mt-3 text-sm text-slate-300">{p.description}</p>
-      <p className="mt-2 text-sm text-slate-400"><strong className="text-slate-200">Ideal para:</strong> {p.bestFor}</p>
-      <div className="mt-3 flex flex-wrap gap-1.5">
-        {p.tags.map((t) => (
-          <span key={t} className="chip">{t}</span>
-        ))}
-      </div>
-      <div className="mt-auto pt-5">
-        <a href={p.url} target="_blank" rel="noopener noreferrer" className="btn btn-ghost w-full">
-          Sitio oficial <ExternalLink className="h-4 w-4" aria-hidden />
-        </a>
-      </div>
-    </article>
+    <a href={p.url} target="_blank" rel="noopener noreferrer" className="panel panel-link group relative flex flex-col p-5">
+      <ArrowUpRight className="absolute top-5 right-5 size-5 text-ink-3 transition-colors group-hover:text-ink" aria-hidden />
+      <span className="grid size-10 place-items-center rounded-[4px] border border-ink bg-paper font-display text-xl font-semibold text-ink" aria-hidden>
+        {p.name[0]}
+      </span>
+      <h3 className="mt-3 pr-8 text-xl leading-tight">{p.name}</h3>
+      <p className="num text-xs text-ink-3">{host}</p>
+      <p className="mt-3 text-sm text-ink">{p.description}</p>
+      <p className="mt-2 text-sm text-ink-2">
+        <strong className="font-semibold text-ink">Ideal para:</strong> {p.bestFor}
+      </p>
+      {p.note && <p className="mt-2 text-xs font-medium text-warn">{p.note}</p>}
+      <p className="mt-auto pt-4 font-mono text-[11px] tracking-wide text-ink-2 uppercase">{p.tags.join(' · ')}</p>
+      <span className="sr-only"> (se abre en una pestaña nueva)</span>
+    </a>
   );
 }
 
+const GROUPS = [
+  { id: 'brokers', n: '01', title: 'Brokers (acciones, ETFs y bonos)', list: BROKERS },
+  { id: 'exchanges', n: '02', title: 'Exchanges de cripto', list: EXCHANGES },
+  { id: 'billeteras', n: '03', title: 'Billeteras de cripto', list: WALLETS },
+];
+
 export default function Platforms() {
   return (
-    <div className="space-y-10">
-      <div>
-        <h1 className="text-2xl font-bold sm:text-3xl">Billeteras y exchanges</h1>
-        <p className="mt-1 text-slate-400">Accesos a los sitios oficiales de las plataformas más usadas. Verifica siempre que estén disponibles en tu país.</p>
-      </div>
+    <div>
+      <title>Plataformas · Funda</title>
+      <PageHeader
+        kicker="Plataformas"
+        title={<>Dónde <span className="mark">invertir</span> y dónde guardar</>}
+        description="Accesos a los sitios oficiales de plataformas conocidas. ¿Estás en El Salvador? Los precios de Funda ya están en dólares, tu moneda. Antes de registrarte, revisa en el sitio oficial que acepten usuarios de tu país."
+      />
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="card p-5">
-          <p className="flex items-center gap-2 font-semibold text-white"><Landmark className="h-5 w-5 text-emerald-400" aria-hidden /> Exchange (casa de cambio)</p>
-          <p className="mt-2 text-sm text-slate-400">Donde compras y vendes cripto con dinero normal. La plataforma guarda tus fondos (custodia): es cómodo, pero dependes de ella.</p>
-        </div>
-        <div className="card p-5">
-          <p className="flex items-center gap-2 font-semibold text-white"><Wallet className="h-5 w-5 text-emerald-400" aria-hidden /> Billetera (wallet)</p>
-          <p className="mt-2 text-sm text-slate-400">Donde tú guardas tus cripto con tus propias llaves (autocustodia). Más control y más responsabilidad: si pierdes tu frase semilla, pierdes el acceso.</p>
-        </div>
-      </div>
+      <Callout tone="warn" icon={ShieldCheck} title="Seguridad primero" className="mt-6">
+        Entra siempre desde estos enlaces o desde las tiendas oficiales de apps, activa la verificación en dos pasos y nunca compartas tu frase semilla ni tus claves. Funda no tiene relación comercial con estas plataformas ni recibe comisiones.
+      </Callout>
 
-      <section>
-        <h2 className="mb-4 text-xl font-semibold">Exchanges</h2>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {EXCHANGES.map((p) => <PlatformCard key={p.name} p={p} />)}
-        </div>
-      </section>
+      <dl className="mt-8 grid gap-px border border-line bg-line md:grid-cols-3">
+        {[
+          { icon: LineChart, t: 'Broker', d: 'Te da acceso a comprar y vender acciones, ETFs y bonos. Es el equivalente de un exchange para los mercados tradicionales.' },
+          { icon: Landmark, t: 'Exchange', d: 'Donde compras y vendes cripto con dinero normal. La plataforma guarda tus fondos (custodia): es cómodo, pero dependes de ella.' },
+          { icon: Wallet, t: 'Billetera', d: 'Donde tú guardas tu cripto con tus propias llaves. Más control y más responsabilidad: si pierdes tu frase semilla, pierdes el acceso.' },
+        ].map(({ icon: Icon, t, d }) => (
+          <div key={t} className="bg-paper p-5">
+            <dt className="flex items-center gap-2 font-display text-xl font-semibold text-ink"><Icon className="size-5" aria-hidden /> {t}</dt>
+            <dd className="mt-1.5 text-sm text-ink-2">{d}</dd>
+          </div>
+        ))}
+      </dl>
 
-      <section>
-        <h2 className="mb-4 text-xl font-semibold">Billeteras</h2>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {WALLETS.map((p) => <PlatformCard key={p.name} p={p} />)}
-        </div>
-      </section>
-
-      <div className="card flex gap-3 border-amber-400/20 p-5 text-sm text-slate-300">
-        <ShieldCheck className="h-5 w-5 shrink-0 text-amber-300" aria-hidden />
-        <p>
-          <strong className="text-white">Seguridad primero:</strong> entra siempre desde estos enlaces o desde las tiendas oficiales de apps, activa el
-          2FA y nunca compartas tu frase semilla. Funda no tiene relación comercial con estas plataformas ni recibe comisiones.
-        </p>
-      </div>
+      {GROUPS.map((g) => (
+        <section key={g.id} className="mt-12" aria-labelledby={g.id}>
+          <SectionHead id={g.id} n={g.n} title={g.title} />
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {g.list.map((p) => (
+              <Card key={p.name} p={p} />
+            ))}
+          </div>
+        </section>
+      ))}
     </div>
   );
 }

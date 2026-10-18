@@ -1,9 +1,12 @@
+// Criptomonedas: CoinGecko (API pública, con CORS, sin clave)
+import { finite, getJSON, peekCached, type Cached } from './http';
+
 const API = 'https://api.coingecko.com/api/v3';
 
-// The 5 largest non-stablecoin cryptos by market cap
+// Las 5 mayores criptos por capitalización, sin stablecoins
 export const TOP_IDS = ['bitcoin', 'ethereum', 'ripple', 'binancecoin', 'solana'];
 
-// CoinGecko can return null for any metric of a coin (e.g. during listing changes)
+// CoinGecko puede devolver null en cualquier métrica (p. ej. durante cambios de listado)
 export interface Coin {
   id: string;
   symbol: string;
@@ -27,56 +30,6 @@ export interface Coin {
 
 export type PricePoint = [timestamp: number, price: number];
 
-const inflight = new Map<string, Promise<unknown>>();
-
-function friendlyError(e: unknown, status?: number): Error {
-  if (status === 429) return new Error('Hay mucha demanda de precios en este momento. Volvemos a intentar en un minuto.');
-  if (status && status >= 500) return new Error('El proveedor de precios no responde. Volvemos a intentar en un minuto.');
-  if (e instanceof TypeError) return new Error('Sin conexión a internet. Revisa tu red; volvemos a intentar en un minuto.');
-  return new Error('No pudimos actualizar los precios. Volvemos a intentar en un minuto.');
-}
-
-// Fetch with localStorage cache; serves stale data if the API fails or rate-limits.
-async function getJSON<T>(path: string, ttlMs: number, validate: (v: unknown) => T, force = false): Promise<T> {
-  const key = `funda:cg:${path}`;
-  let cached: { t: number; v: T } | null = null;
-  try {
-    const raw = JSON.parse(localStorage.getItem(key) ?? 'null');
-    if (raw && typeof raw.t === 'number') cached = { t: raw.t, v: validate(raw.v) };
-  } catch {
-    /* storage unavailable or corrupt cache entry */
-  }
-  if (!force && cached && Date.now() - cached.t < ttlMs) return cached.v;
-  if (inflight.has(key)) return inflight.get(key) as Promise<T>;
-
-  const req = (async () => {
-    let res: Response;
-    try {
-      // A stalled request would otherwise block every later refresh behind the same promise
-      res = await fetch(API + path, { signal: AbortSignal.timeout(12_000) });
-    } catch (e) {
-      throw friendlyError(e);
-    }
-    if (!res.ok) throw friendlyError(null, res.status);
-    const v = validate(await res.json());
-    try {
-      localStorage.setItem(key, JSON.stringify({ t: Date.now(), v }));
-    } catch {
-      /* quota exceeded: keep working without cache */
-    }
-    return v;
-  })()
-    .catch((e) => {
-      if (cached) return cached.v;
-      throw e instanceof Error && !(e instanceof SyntaxError) ? e : friendlyError(e);
-    })
-    .finally(() => inflight.delete(key));
-  inflight.set(key, req);
-  return req;
-}
-
-const finite = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n);
-
 export function parseMarkets(v: unknown): Coin[] {
   if (!Array.isArray(v)) throw new Error('Respuesta de precios inválida.');
   const coins = v.filter((c): c is Coin => c && typeof c.id === 'string' && finite(c.current_price) && c.current_price > 0);
@@ -90,29 +43,18 @@ export function parseHistory(v: unknown): PricePoint[] {
   return prices.filter((p): p is PricePoint => Array.isArray(p) && finite(p[0]) && finite(p[1]) && p[1] > 0);
 }
 
-const MARKETS_PATH = `/coins/markets?vs_currency=usd&ids=${TOP_IDS.join(',')}&order=market_cap_desc&sparkline=true&price_change_percentage=1h,24h,7d`;
-const historyPath = (id: string, days: number) =>
-  `/coins/${encodeURIComponent(id)}/market_chart?vs_currency=usd&days=${days}${days >= 90 ? '&interval=daily' : ''}`;
-// Stored as { prices } so the cache keeps CoinGecko's shape
+const MARKETS_URL = `${API}/coins/markets?vs_currency=usd&ids=${TOP_IDS.join(',')}&order=market_cap_desc&sparkline=true&price_change_percentage=1h,24h,7d`;
+const historyUrl = (id: string, days: number) =>
+  `${API}/coins/${encodeURIComponent(id)}/market_chart?vs_currency=usd&days=${days}${days >= 90 ? '&interval=daily' : ''}`;
+// Se guarda como { prices } para conservar la forma de CoinGecko
 const parseHistoryEntry = (v: unknown) => ({ prices: parseHistory(v) });
 
-export function fetchMarkets(force = false): Promise<Coin[]> {
-  return getJSON(MARKETS_PATH, 55_000, parseMarkets, force);
-}
+export const fetchMarkets = (force = false): Promise<Cached<Coin[]>> => getJSON(MARKETS_URL, 55_000, parseMarkets, { force });
 
-export async function fetchHistory(id: string, days: number): Promise<PricePoint[]> {
+export async function fetchCryptoHistory(id: string, days: number): Promise<PricePoint[]> {
   const ttl = days === 1 ? 5 * 60_000 : 30 * 60_000;
-  return (await getJSON(historyPath(id, days), ttl, parseHistoryEntry)).prices;
+  return (await getJSON(historyUrl(id, days), ttl, parseHistoryEntry)).v.prices;
 }
 
-/** Last cached value whatever its age, so returning visitors see data instantly while it refreshes. */
-function peek<T>(path: string, validate: (v: unknown) => T): T | null {
-  try {
-    const raw = JSON.parse(localStorage.getItem(`funda:cg:${path}`) ?? 'null');
-    return raw ? validate(raw.v) : null;
-  } catch {
-    return null;
-  }
-}
-export const peekMarkets = () => peek(MARKETS_PATH, parseMarkets);
-export const peekHistory = (id: string, days: number) => peek(historyPath(id, days), parseHistoryEntry)?.prices ?? null;
+export const peekMarkets = () => peekCached(MARKETS_URL, parseMarkets);
+export const peekCryptoHistory = (id: string, days: number) => peekCached(historyUrl(id, days), parseHistoryEntry)?.v.prices ?? null;
