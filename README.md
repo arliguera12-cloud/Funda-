@@ -35,7 +35,9 @@ Otros comandos: `npm run build` (versión de producción), `npm test` (pruebas),
 - **Gemini**: crea una clave en <https://aistudio.google.com/apikey> y ponla en `GEMINI_API_KEY`.
 - **Firebase Auth**: en <https://console.firebase.google.com> crea un proyecto, activa *Authentication → Correo/contraseña* y *Google*, registra una app web y copia los valores en las variables `VITE_FIREBASE_*`. Agrega tu dominio en *Authentication → Settings → Authorized domains*.
 
-Sin claves la app funciona igual: el login queda en modo demo y el asistente responde con el glosario.
+- **Dominio público** (opcional): pon tu dominio en `VITE_SITE_URL` (por ejemplo `https://funda.app`) para que la imagen al compartir en WhatsApp o Facebook use una URL absoluta.
+
+Sin claves la app funciona igual: el login queda en *versión de prueba* y el asistente responde con el glosario.
 
 ## Migrar a Google AI Studio
 
@@ -45,7 +47,7 @@ El proyecto usa la misma base que generan las apps de AI Studio (Build): **React
 2. AI Studio inyecta tu clave de Gemini automáticamente, así que no hace falta `.env.local` ahí.
 3. Para publicar, usa **Deploy** de AI Studio (Cloud Run): mantiene la clave del lado del servidor.
 
-> ⚠️ **Importante:** si publicas `npm run build` en un hosting estático (Netlify, Vercel, GitHub Pages), la clave de Gemini queda visible en el código del navegador. Para publicar fuera de AI Studio, mueve las llamadas a Gemini a un backend (por ejemplo, una Cloud Function).
+> ⚠️ **Importante:** si publicas `npm run build` en un hosting estático (Netlify, Vercel, GitHub Pages), la clave de Gemini queda visible en el código del navegador (el build lo advierte). Para publicar fuera de AI Studio, mueve las llamadas a Gemini a un backend (por ejemplo, una Cloud Function) o, como mínimo, restringe la clave en Google Cloud Console a tu dominio y a la API de Gemini, con un límite diario de uso.
 
 ## Estructura
 
@@ -63,7 +65,8 @@ Para cambiar textos educativos, términos o plataformas solo edita los archivos 
 
 - Las alertas solo se revisan mientras la app está abierta en alguna pestaña. Para notificaciones push con la app cerrada hace falta Firebase Cloud Messaging y un backend.
 - Las alertas y preferencias se guardan en el navegador, no en la nube.
-- Los precios vienen de la API pública gratuita de CoinGecko, que tiene un límite de consultas. La app guarda los datos en caché y, si la API falla, muestra los últimos precios guardados.
+- Los precios vienen de la API pública gratuita de CoinGecko, que tiene un límite de consultas. La app guarda los datos en caché, muestra al instante los últimos precios guardados y avisa cuando los datos tienen más de 5 minutos.
+- Las páginas de Términos y Privacidad son un borrador: revísalas antes de lanzar y agrega un correo de contacto real.
 
 ---
 
