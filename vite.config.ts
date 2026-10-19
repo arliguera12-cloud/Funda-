@@ -5,6 +5,10 @@ import tailwindcss from '@tailwindcss/vite';
 // Same env convention as Google AI Studio apps: GEMINI_API_KEY in .env.local
 export default defineConfig(({ mode, command }) => {
   const env = loadEnv(mode, '.', '');
+  // Con el Worker la clave vive en el servidor: si además llega al build, acabaría visible en el navegador
+  if (command === 'build' && env.GEMINI_API_KEY && env.VITE_API_PROXY) {
+    throw new Error('GEMINI_API_KEY no debe existir en el build cuando se usa VITE_API_PROXY: bórrala de las variables de Cloudflare Pages.');
+  }
   if (command === 'build' && env.GEMINI_API_KEY) {
     console.warn(
       '\n⚠️  GEMINI_API_KEY quedará visible en el código del navegador. Publica con AI Studio (Cloud Run) o restringe la clave ' +
