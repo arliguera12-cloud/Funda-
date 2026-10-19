@@ -15,7 +15,7 @@ describe('worker proxy', () => {
   });
 
   it('acepta el origen con barra final en la lista y responde el preflight', async () => {
-    const res = await call('/v1beta/models/x:generateContent', { method: 'OPTIONS', origin: 'https://example.org' });
+    const res = await call('/v1beta/models/gemini-flash-latest:generateContent', { method: 'OPTIONS', origin: 'https://example.org' });
     expect(res.status).toBe(204);
     expect(res.headers.get('access-control-allow-origin')).toBe('https://example.org');
   });
@@ -47,12 +47,34 @@ describe('worker proxy', () => {
     expect(url).toBe('https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:streamGenerateContent?alt=sse');
     expect(init.headers['x-goog-api-key']).toBe('g-secret');
     expect((await call('/v1beta/files', { method: 'POST', body: '{}' })).status).toBe(404);
-    expect((await call('/v1beta/models/x:generateContent', { method: 'GET' })).status).toBe(404);
+    expect((await call('/v1beta/models/gemini-flash-latest:generateContent', { method: 'GET' })).status).toBe(404);
   });
 
   it('limita el tamaño del cuerpo y avisa si falta un secreto', async () => {
     vi.stubGlobal('fetch', vi.fn());
-    expect((await call('/v1beta/models/x:generateContent', { method: 'POST', body: 'a'.repeat(130 * 1024) })).status).toBe(413);
-    expect((await call('/v1beta/models/x:generateContent', { method: 'POST', body: '{}' }, { ALLOWED_ORIGINS: env.ALLOWED_ORIGINS })).status).toBe(503);
+    expect((await call('/v1beta/models/gemini-flash-latest:generateContent', { method: 'POST', body: 'a'.repeat(130 * 1024) })).status).toBe(413);
+    expect((await call('/v1beta/models/gemini-flash-latest:generateContent', { method: 'POST', body: '{}' }, { ALLOWED_ORIGINS: env.ALLOWED_ORIGINS })).status).toBe(503);
+  });
+
+  it('solo permite el modelo de la app y descarta parámetros extra', async () => {
+    const f = vi.fn().mockResolvedValue(new Response('{}'));
+    vi.stubGlobal('fetch', f);
+    expect((await call('/v1beta/models/gemini-2.5-pro:generateContent', { method: 'POST', body: '{}' })).status).toBe(404);
+    expect(f).not.toHaveBeenCalled();
+    await call('/v1beta/models/gemini-flash-latest:generateContent?key=otra&alt=json', { method: 'POST', body: '{}' });
+    expect(f.mock.calls[0][0]).toBe('https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent');
+  });
+
+  it('frena a una IP que pregunta demasiado y no a las demás', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{}')));
+    const from = (ip: string) =>
+      worker.fetch(
+        new Request('https://api.test/v1beta/models/gemini-flash-latest:generateContent', { method: 'POST', body: '{}', headers: { origin: 'https://traceyn.pages.dev', 'cf-connecting-ip': ip } }),
+        env,
+        ctx,
+      );
+    for (let i = 0; i < 20; i++) expect((await from('1.1.1.1')).status).toBe(200);
+    expect((await from('1.1.1.1')).status).toBe(429);
+    expect((await from('2.2.2.2')).status).toBe(200);
   });
 });

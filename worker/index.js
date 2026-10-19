@@ -6,9 +6,22 @@
 const GEMINI = 'https://generativelanguage.googleapis.com';
 const TWELVE = 'https://api.twelvedata.com/time_series';
 const SYMBOLS = new Set(['SPY', 'QQQ', 'TLT', 'GLD']);
-const GEMINI_PATH = /^\/v1beta\/models\/[\w.-]+:(generateContent|streamGenerateContent)$/;
+// Solo el modelo que usa la app (src/lib/ai.ts): nadie puede pedir otro con tu clave
+const GEMINI_PATH = /^\/v1beta\/models\/gemini-flash-latest:(generateContent|streamGenerateContent)$/;
 const MAX_BODY = 128 * 1024;
 const STOCKS_TTL = 1800;
+const LIMIT = 20; // peticiones a Gemini por IP y minuto
+const WINDOW = 60_000;
+// shortcut: el contador vive en cada instancia del Worker (no se comparte entre centros de datos); para un tope global usa la regla de Rate limiting de Cloudflare.
+const hits = new Map();
+function limited(ip) {
+  const now = Date.now();
+  if (hits.size > 500) for (const [k, v] of hits) if (v.at(-1) < now - WINDOW) hits.delete(k);
+  const recent = (hits.get(ip) ?? []).filter((t) => t > now - WINDOW);
+  recent.push(now);
+  hits.set(ip, recent);
+  return recent.length > LIMIT;
+}
 
 const json = (status, body, headers) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json', ...headers } });
 
@@ -35,9 +48,12 @@ async function stocks(url, env, ctx, cors) {
 
 async function gemini(request, url, env, cors) {
   if (!env.GEMINI_API_KEY) return json(503, { error: 'IA no configurada.' }, cors);
+  if (limited(request.headers.get('cf-connecting-ip') ?? 'anon')) return json(429, { error: 'Demasiadas preguntas seguidas. Espera un minuto.' }, cors);
   const body = await request.text();
   if (body.length > MAX_BODY) return json(413, { error: 'Mensaje demasiado largo.' }, cors);
-  const res = await fetch(GEMINI + url.pathname + url.search, {
+  // Solo ?alt=sse (streaming) pasa a Google; cualquier otro parámetro se descarta
+  const search = url.searchParams.get('alt') === 'sse' ? '?alt=sse' : '';
+  const res = await fetch(GEMINI + url.pathname + search, {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
     body,
