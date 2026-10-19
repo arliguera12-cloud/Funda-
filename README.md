@@ -53,6 +53,8 @@ Todo se guarda en caché local: la app muestra al instante los últimos datos, a
 
 El proyecto usa la misma base que generan las apps de AI Studio (Build): **React + TypeScript + Vite + `@google/genai`**, la clave en `GEMINI_API_KEY` y `metadata.json`. Sube o pega los archivos respetando la estructura y usa **Deploy** de AI Studio (Cloud Run), que mantiene la clave del lado del servidor.
 
+Pasos detallados, pruebas y qué hacer si algo falla: [`docs/MIGRACION-AI-STUDIO.md`](docs/MIGRACION-AI-STUDIO.md).
+
 ## Publicar gratis (Cloudflare)
 
 Sitio en Cloudflare Pages y un Worker (`worker/`) que guarda las claves de Gemini y Twelve Data y cachea la bolsa. Con `VITE_API_PROXY` apuntando al Worker, **ninguna clave llega al navegador**. Pasos exactos en [`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md).
