@@ -13,12 +13,12 @@ export function PublicHeader({ nav }: { nav?: ReactNode }) {
   return (
     <header>
       <div className="bg-ink text-on-ink">
-        <div className="mx-auto flex h-9 max-w-6xl items-center px-4 sm:px-6">
+        <div className="shell flex h-9 items-center">
           <MarketTape assets={assets} className="min-w-0 flex-1" />
         </div>
       </div>
       <div className="border-b border-ink bg-paper/95 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+        <div className="shell flex items-center justify-between gap-3 py-3">
           <Logo size="lg" />
           {nav}
           <div className="flex items-center gap-2">
@@ -48,7 +48,7 @@ export function PublicHeader({ nav }: { nav?: ReactNode }) {
 export function PublicFooter() {
   return (
     <footer className="rule-double mt-8">
-      <div className="mx-auto max-w-6xl space-y-6 px-4 py-10 sm:px-6">
+      <div className="shell space-y-6 py-10">
         <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
           <div>
             <Logo size="lg" />
