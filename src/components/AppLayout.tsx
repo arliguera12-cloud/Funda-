@@ -152,14 +152,14 @@ export default function AppLayout() {
       <div className="min-h-dvh">
         {/* Cinta de precios + estado */}
         <div className="bg-ink text-on-ink">
-          <div className="mx-auto flex h-9 max-w-6xl items-center gap-5 px-4 sm:px-8">
+          <div className="shell flex h-9 items-center gap-5">
             <MarketTape assets={assets} className="min-w-0 flex-1" />
             <MarketStatus />
           </div>
         </div>
 
         {/* Cabecera del diario */}
-        <div className="mx-auto flex max-w-6xl items-end justify-between gap-4 px-4 pt-4 pb-3 sm:px-8">
+        <div className="shell flex items-end justify-between gap-4 pt-4 pb-3">
           <div className="min-w-0">
             <Logo size="lg" to="/app" />
             <p className="kicker mt-1.5 hidden first-letter:uppercase sm:block">{today}</p>
@@ -190,7 +190,7 @@ export default function AppLayout() {
 
         {/* Secciones (escritorio) */}
         <nav className="sticky top-0 z-30 hidden border-y border-ink bg-paper/95 backdrop-blur lg:block" aria-label="Principal">
-          <ul className="mx-auto flex max-w-6xl gap-1 px-8">
+          <ul className="shell flex gap-1">
             {NAV.map(({ to, label, end }) => (
               <li key={to}>
                 <NavLink
@@ -212,7 +212,7 @@ export default function AppLayout() {
           id="contenido"
           ref={mainRef}
           tabIndex={-1}
-          className="mx-auto max-w-6xl px-4 pt-6 pb-[calc(7rem+env(safe-area-inset-bottom))] outline-none sm:px-8 lg:pb-14"
+          className="shell pt-6 pb-[calc(7rem+env(safe-area-inset-bottom))] outline-none lg:pb-14"
         >
           <Suspense
             fallback={

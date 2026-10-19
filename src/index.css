@@ -137,6 +137,8 @@
 }
 
 @layer components {
+  /* Contenedor fluido: ocupa el ancho de la pantalla con márgenes proporcionales y se detiene en pantallas muy grandes */
+  .shell { margin-inline: auto; width: 100%; max-width: 120rem; padding-inline: clamp(1rem, 3.5vw, 4rem); }
   /* Superficies: papel con filete fino. Sin sombras difusas ni esquinas muy redondeadas. */
   .panel { @apply rounded-[5px] border border-line bg-paper-2; }
   .panel-hard { @apply rounded-[5px] border border-ink bg-paper; }

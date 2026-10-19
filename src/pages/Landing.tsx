@@ -116,7 +116,7 @@ export default function Landing() {
 
       <main id="contenido" tabIndex={-1} className="outline-none">
         {/* Portada */}
-        <section className="mx-auto grid max-w-6xl gap-x-12 gap-y-10 px-4 pt-12 pb-16 sm:px-6 lg:grid-cols-[1.15fr_1fr] lg:pt-16">
+        <section className="shell grid gap-x-12 gap-y-10 pt-12 pb-16 lg:grid-cols-[1.15fr_1fr] lg:pt-16">
           <div>
             <p className="kicker animate-rise [--rise:10px]">Para quienes empiezan desde cero</p>
             <h1 className="mt-4 text-[clamp(2.7rem,7vw,5rem)] leading-[0.98] animate-rise [--rise:14px] [animation-delay:60ms]">
@@ -179,7 +179,7 @@ export default function Landing() {
         </section>
 
         {/* Qué cubre */}
-        <section id="mercados" tabIndex={-1} className="mx-auto max-w-6xl scroll-mt-20 px-4 py-16 outline-none sm:px-6">
+        <section id="mercados" tabIndex={-1} className="shell scroll-mt-20 py-16 outline-none">
           <div data-reveal>
             <SectionHead n="01" title="Todos los mercados, en español claro" aside={<Link to={cta.to} className="link">Ver los mercados</Link>} />
             <div className="grid gap-px border border-line bg-line md:grid-cols-3">
@@ -237,7 +237,7 @@ export default function Landing() {
 
         {/* Calculadora */}
         <section id="calculadora" tabIndex={-1} className="scroll-mt-20 border-y border-ink bg-paper-2 outline-none">
-          <div data-reveal className="mx-auto grid max-w-6xl items-center gap-x-14 gap-y-8 px-4 py-16 sm:px-6 lg:grid-cols-[1fr_1.1fr]">
+          <div data-reveal className="shell grid items-center gap-x-14 gap-y-8 py-16 lg:grid-cols-[1fr_1.1fr]">
             <div>
               <p className="kicker">02 · Haz las cuentas</p>
               <h2 className="mt-2 text-[clamp(2rem,4.5vw,3rem)] leading-[1.05]">El tiempo trabaja más que tú</h2>
@@ -249,7 +249,7 @@ export default function Landing() {
         </section>
 
         {/* Cómo funciona */}
-        <section id="como-funciona" tabIndex={-1} className="mx-auto max-w-6xl scroll-mt-20 px-4 py-16 outline-none sm:px-6">
+        <section id="como-funciona" tabIndex={-1} className="shell scroll-mt-20 py-16 outline-none">
           <div data-reveal>
             <SectionHead n="03" title="Cómo funciona" />
             <ol className="grid gap-x-10 gap-y-6 md:grid-cols-3">
@@ -269,7 +269,7 @@ export default function Landing() {
         </section>
 
         {/* Aprende */}
-        <section id="aprende" tabIndex={-1} className="mx-auto max-w-6xl scroll-mt-20 px-4 pb-16 outline-none sm:px-6">
+        <section id="aprende" tabIndex={-1} className="shell scroll-mt-20 pb-16 outline-none">
           <div data-reveal>
             <SectionHead n="04" title="Los términos difíciles, explicados fácil" />
             <div role="group" aria-label="Elige un término" className="flex flex-wrap gap-2">
@@ -290,7 +290,7 @@ export default function Landing() {
 
         {/* Confianza */}
         <section className="border-y border-ink bg-paper-2">
-          <div data-reveal className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+          <div data-reveal className="shell py-16">
             <SectionHead n="05" title="Educación, no promesas" />
             <div className="grid gap-px border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
               {[
@@ -309,7 +309,7 @@ export default function Landing() {
         </section>
 
         {/* Preguntas */}
-        <section id="faq" tabIndex={-1} className="mx-auto grid max-w-6xl scroll-mt-20 gap-x-14 gap-y-8 px-4 py-16 outline-none sm:px-6 lg:grid-cols-[1fr_1.7fr]">
+        <section id="faq" tabIndex={-1} className="shell grid scroll-mt-20 gap-x-14 gap-y-8 py-16 outline-none lg:grid-cols-[1fr_1.7fr]">
           <div data-reveal>
             <p className="kicker">06 · Preguntas</p>
             <h2 className="mt-2 text-[clamp(2rem,4.5vw,3rem)] leading-[1.05]">Lo que más nos preguntan</h2>
@@ -329,7 +329,7 @@ export default function Landing() {
         </section>
 
         {/* Cierre */}
-        <section className="mx-auto max-w-6xl px-4 pb-8 sm:px-6">
+        <section className="shell pb-8">
           <div data-reveal className="relative overflow-hidden border border-ink bg-paper-2 p-8 sm:p-12 lg:flex lg:items-end lg:justify-between lg:gap-10">
             {btc && <Sparkline area data={btc.spark} className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 w-full opacity-25 [mask-image:linear-gradient(to_right,transparent,black_20%,black_80%,transparent)]" />}
             <div className="relative max-w-xl">
