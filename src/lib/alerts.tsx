@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import { isStale, useMarket } from './market-context';
+import { useMarket } from './market-context';
+import { dueAlerts } from './alert-rules';
 import { fmtPrice } from './assets';
 import { SIGNAL_META, type SignalLevel } from './indicators';
 import { store } from './storage';
@@ -106,12 +107,7 @@ export function AlertsProvider({ uid, children }: { uid: string; children: React
   const notified = useRef(new Set<string>());
   useEffect(() => {
     const now = Date.now();
-    const fired = alertsRef.current.flatMap((a) => {
-      const asset = assets.find((x) => x.id === a.assetId);
-      if (!asset || a.triggeredAt || notified.current.has(a.id) || isStale(asset.kind, status[asset.kind], now)) return [];
-      const hit = a.direction === 'above' ? asset.price >= a.price : asset.price <= a.price;
-      return hit ? [{ a, asset }] : [];
-    });
+    const fired = dueAlerts(alertsRef.current, assets, status, now, notified.current);
     if (!fired.length) return;
     const ids = new Set(fired.map((f) => f.a.id));
     setAlerts((list) => list.map((a) => (ids.has(a.id) && !a.triggeredAt ? { ...a, triggeredAt: now } : a)));
