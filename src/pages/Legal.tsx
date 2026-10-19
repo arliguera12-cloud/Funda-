@@ -4,6 +4,7 @@ import { PublicFooter, PublicHeader } from '../components/PublicChrome';
 import { APP_NAME } from '../components/ui';
 
 const UPDATED = '18 de octubre de 2026';
+const CONTACT = 'traceyn.invertia@gmail.com';
 
 const DOCS = {
   terminos: {
@@ -12,7 +13,7 @@ const DOCS = {
       {
         h: 'Qué es Trace YN',
         p: [
-          `${APP_NAME} es una herramienta educativa sobre inversiones y criptomonedas. Muestra precios públicos, indicadores técnicos calculados automáticamente, alertas de precio y explicaciones generadas con inteligencia artificial.`,
+          `${APP_NAME} es una herramienta educativa sobre inversiones: bolsa y ETFs, divisas y criptomonedas. Muestra precios públicos, indicadores técnicos calculados automáticamente, alertas de precio y explicaciones generadas con inteligencia artificial.`,
         ],
       },
       {
@@ -40,6 +41,10 @@ const DOCS = {
           'Incluimos enlaces a sitios oficiales de exchanges y billeteras solo como referencia. No tenemos relación comercial con ellos ni respondemos por sus servicios. Verifica que estén disponibles y regulados en tu país.',
         ],
       },
+      {
+        h: 'Contacto',
+        p: [`Para dudas sobre estos términos o para reportar un error, escribe a ${CONTACT}.`],
+      },
     ],
   },
   privacidad: {
@@ -48,8 +53,8 @@ const DOCS = {
       {
         h: 'Qué datos guardamos',
         p: [
-          'Tu nombre y correo para identificarte. Si usas la versión de prueba, esos datos, tus alertas y tus preferencias se guardan solo en tu navegador (almacenamiento local) y no salen de tu dispositivo.',
-          'Si la cuenta se crea con Firebase Authentication (Google), Google procesa tu correo y tu contraseña cifrada para gestionar el inicio de sesión.',
+          'Tu nombre y correo, para identificarte. El inicio de sesión lo gestiona Firebase Authentication (Google): si entras con correo, Google procesa tu correo y una contraseña cifrada; si entras con Google, recibimos el nombre, el correo y la foto de esa cuenta.',
+          'Tus alertas de precio y tus preferencias (tema, avisos) se guardan solo en tu navegador, en el almacenamiento local de tu dispositivo, no en nuestros servidores.',
         ],
       },
       {
@@ -59,13 +64,15 @@ const DOCS = {
       {
         h: 'Servicios externos',
         p: [
-          'Para mostrar precios consultamos las APIs de CoinGecko, Frankfurter y, si está activada, Twelve Data. Las preguntas que escribes al asistente se envían a Google Gemini para generar la respuesta: no escribas datos personales o sensibles en el chat.',
+          'Para mostrar precios consultamos las APIs de CoinGecko, Frankfurter y Twelve Data. Los datos de bolsa y las preguntas al asistente pasan por un servidor intermedio en Cloudflare que protege nuestras claves; Cloudflare puede registrar datos técnicos como tu dirección IP.',
+          'Las preguntas que escribes al asistente se envían a Google Gemini para generar la respuesta. Usamos el plan gratuito de Gemini, con el que Google puede usar esas conversaciones para mejorar sus modelos y personas revisoras podrían leerlas: no escribas datos personales o sensibles en el chat.',
         ],
       },
       {
         h: 'Tus decisiones',
         p: [
-          'Puedes cerrar sesión cuando quieras. Para borrar los datos de la versión de prueba, borra los datos del sitio en la configuración de tu navegador.',
+          'Puedes cerrar sesión cuando quieras. Para borrar tus alertas y preferencias, borra los datos del sitio en la configuración de tu navegador.',
+          `Para pedir que eliminemos tu cuenta o para cualquier duda sobre tus datos, escribe a ${CONTACT}.`,
         ],
       },
     ],
